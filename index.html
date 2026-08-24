@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draft Day Race 2026</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #2d333b;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #f0b132;
+      --green-dark: #122a1c;
+      --green-mid: #1a4028;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ────────────────────────────────── */
+    .header {
+      background: linear-gradient(160deg, #1a0e36 0%, #0d1117 60%);
+      border-bottom: 2px solid var(--accent);
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+    }
+
+    .header-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .header h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: var(--accent);
+      text-shadow: 0 0 60px rgba(240,177,50,0.25);
+      line-height: 1;
+    }
+
+    .header-sub {
+      margin-top: 0.6rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── COUNTDOWN ─────────────────────────────── */
+    .countdown {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin: 1.75rem auto 0;
+      flex-wrap: wrap;
+    }
+
+    .cd-unit {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 1.1rem;
+      min-width: 72px;
+      text-align: center;
+    }
+
+    .cd-num {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cd-lbl {
+      font-size: 0.6rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.3rem;
+    }
+
+    /* ── LAYOUT ────────────────────────────────── */
+    .main {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 700px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── CARD ──────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ── RACE TRACK ────────────────────────────── */
+    .track-wrap {
+      padding: 1rem 1.25rem 1.25rem;
+    }
+
+    .lane {
+      position: relative;
+      height: 52px;
+      background: var(--green-dark);
+      border-radius: 6px;
+      margin-bottom: 7px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    /* yard lines */
+    .lane::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 9.9%,
+        rgba(255,255,255,0.04) 9.9%,
+        rgba(255,255,255,0.04) 10%
+      );
+      pointer-events: none;
+    }
+
+    .runner {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: left 2s cubic-bezier(0.25, 0.1, 0.25, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.28rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      white-space: nowrap;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      max-width: calc(100% - 4%);
+    }
+
+    /* finish line */
+    .finish {
+      position: absolute;
+      right: 4%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: repeating-linear-gradient(
+        180deg,
+        #fff 0 4px,
+        #000 4px 8px
+      );
+      opacity: 0.25;
+    }
+
+    /* ── STANDINGS ─────────────────────────────── */
+    .standing-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.7rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
+    }
+    .standing-row:last-child { border-bottom: none; }
+    .standing-row:hover { background: rgba(255,255,255,0.025); }
+
+    .rank-num {
+      font-size: 1.1rem;
+      font-weight: 900;
+      min-width: 1.6rem;
+      color: var(--muted);
+    }
+    .rank-num.gold { color: #ffd700; }
+    .rank-num.silver { color: #c0c0c0; }
+    .rank-num.bronze { color: #cd7f32; }
+
+    .team-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .team-info { flex: 1; min-width: 0; }
+    .team-name { font-weight: 600; font-size: 0.88rem; truncate: ellipsis; }
+    .team-owner { font-size: 0.72rem; color: var(--muted); }
+
+    .pick-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(240,177,50,0.12);
+      color: var(--accent);
+      padding: 0.2rem 0.55rem;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+
+    .prog-wrap {
+      width: 80px;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .prog-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 2s ease;
+    }
+
+    @media (max-width: 480px) {
+      .prog-wrap { display: none; }
+      .team-owner { display: none; }
+    }
+
+    /* ── CHAT ──────────────────────────────────── */
+    .chat-msgs {
+      height: 280px;
+      overflow-y: auto;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      scroll-behavior: smooth;
+    }
+
+    .chat-msgs::-webkit-scrollbar { width: 4px; }
+    .chat-msgs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .msg {
+      display: flex;
+      gap: 0.65rem;
+      animation: msgIn 0.2s ease;
+    }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      color: #fff;
+    }
+
+    .msg-name {
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+
+    .msg-time {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-left: 0.4rem;
+    }
+
+    .msg-text {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      margin-top: 0.15rem;
+      color: #cdd9e5;
+      word-break: break-word;
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.9rem 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .chat-input input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.85rem;
+      color: var(--text);
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .chat-input input:focus { border-color: var(--accent); }
+    #name-in { width: 120px; flex-shrink: 0; }
+    #msg-in  { flex: 1; }
+
+    .chat-input button {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 1.1rem;
+      font-weight: 800;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .chat-input button:hover { opacity: 0.82; }
+
+    /* setup notice */
+    .setup-note {
+      margin: 0.75rem 1.25rem;
+      padding: 0.85rem 1rem;
+      background: rgba(240,177,50,0.07);
+      border: 1px solid rgba(240,177,50,0.2);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #c8a84b;
+      line-height: 1.6;
+    }
+
+    .setup-note strong { color: var(--accent); }
+    .setup-note code {
+      background: rgba(255,255,255,0.06);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.78rem;
+    }
+
+    /* final banner */
+    .final-banner {
+      text-align: center;
+      padding: 0.9rem;
+      background: rgba(240,177,50,0.08);
+      border-bottom: 1px solid rgba(240,177,50,0.25);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Fantasy Football 2026</div>
+  <h1>DRAFT DAY RACE</h1>
+  <p class="header-sub">First across the line picks first. Draft locks September 2 at 8 PM ET.</p>
+  <div class="countdown" id="countdown"></div>
+</div>
+
+<div class="main">
+
+  <div id="final-banner-slot"></div>
+
+  <div class="card">
+    <div class="card-head">🏁 The Race</div>
+    <div class="track-wrap" id="track"></div>
+  </div>
+
+  <div class="two-col">
+
+    <div class="card">
+      <div class="card-head">📋 Draft Order</div>
+      <div id="standings"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">💬 League Chat</div>
+      <div id="chat-setup"></div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-input">
+        <input id="name-in" placeholder="Your name" maxlength="20" />
+        <input id="msg-in"  placeholder="Talk trash..." maxlength="200" />
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  FIREBASE CONFIG
+//  Paste your Firebase Realtime Database config here.
+//  Without it the race and standings still work fully;
+//  only multi-user chat requires Firebase.
+//
+//  Setup steps:
+//  1. Go to console.firebase.google.com → New project
+//  2. Build → Realtime Database → Create (start in test mode)
+//  3. Project settings → Your apps → Web → Register app
+//  4. Copy the firebaseConfig object values below
+// ═══════════════════════════════════════════════════════
+const FB = {
+  apiKey:            "",
+  authDomain:        "",
+  databaseURL:       "",   // e.g. "https://your-project-default-rtdb.firebaseio.com"
+  projectId:         "",
+  storageBucket:     "",
+  messagingSenderId: "",
+  appId:             ""
+};
+
+// ═══════════════════════════════════════════════════════
+//  TEAMS
+// ═══════════════════════════════════════════════════════
+const TEAMS = [
+  { name: "Howie Roseman Stan",     owner: "knewk",          color: "#e05252" },
+  { name: "A Plane hit the Bower",  owner: "hungrygunter",   color: "#e8873a" },
+  { name: "Amon-Ra St. Downs",      owner: "JaxStroh",       color: "#2baa8d" },
+  { name: "CeeDeez Veiny Lambchop", owner: "NotWeirdWild",   color: "#d4b84a" },
+  { name: "LoveTneck",              owner: "zanetaylor21",   color: "#4a90d9" },
+  { name: "Costco Guys",            owner: "Sorenlind",      color: "#8b63c8" },
+  { name: "Many Men",               owner: "noahness10",     color: "#34c78a" },
+  { name: "Darty People",           owner: "PenIsland7",     color: "#e84b7a" },
+  { name: "Capitol Stormers",       owner: "xavierkolb",     color: "#3ea6cc" },
+  { name: "2 inches (combined)",    owner: "mcgannon12",     color: "#f5c842" },
+];
+
+// ═══════════════════════════════════════════════════════
+//  RACE ENGINE
+//  Deterministic: every user sees the same positions
+//  because positions are computed from elapsed time only.
+// ═══════════════════════════════════════════════════════
+const RACE_START = new Date('2026-08-24T16:00:00Z').getTime(); // Aug 24 noon ET
+const DRAFT_END  = new Date('2026-09-03T00:00:00Z').getTime(); // Sept 2 8 PM ET
+const TICK_MS    = 60 * 60 * 1000; // 1 hour per tick
+
+// Mulberry32 seeded PRNG — fast, good distribution
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function computePositions(atMs) {
+  const clampedMs = Math.min(atMs, DRAFT_END);
+  const ticks = Math.max(0, Math.floor((clampedMs - RACE_START) / TICK_MS));
+
+  return TEAMS.map((team, i) => {
+    const rand = rng(i * 999983 + 0xBEEFCAFE);
+    let pos = 0;
+    for (let t = 0; t < ticks; t++) pos += rand();
+    return { ...team, pos };
+  });
+}
+
+function rankByPos(teams) {
+  return [...teams].sort((a, b) => b.pos - a.pos).map((t, i) => ({ ...t, rank: i + 1 }));
+}
+
+// ═══════════════════════════════════════════════════════
+//  COUNTDOWN
+// ═══════════════════════════════════════════════════════
+function updateCountdown() {
+  const rem = DRAFT_END - Date.now();
+  const el  = document.getElementById('countdown');
+  if (rem <= 0) {
+    el.innerHTML = '<div style="color:var(--accent);font-size:1.1rem;font-weight:800;letter-spacing:.05em">RACE OVER — DRAFT ORDER IS SET</div>';
+    return;
+  }
+  const d = Math.floor(rem / 86400000);
+  const h = Math.floor((rem % 86400000) / 3600000);
+  const m = Math.floor((rem % 3600000)  / 60000);
+  const s = Math.floor((rem % 60000)    / 1000);
+  el.innerHTML = `
+    <div class="cd-unit"><div class="cd-num">${d}</div><div class="cd-lbl">Days</div></div>
+    <div class="cd-unit"><div class="cd-num">${String(h).padStart(2,'0')}</div><div class="cd-lbl">Hrs</div></div>
+    <div class="cd-unit"><div class="cd-num">${String(m).padStart(2,'0')}</div><div class="cd-lbl">Min</div></div>
+    <div class="cd-unit"><div class="cd-num">${String(s).padStart(2,'0')}</div><div class="cd-lbl">Sec</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RACE TRACK RENDER
+// ═══════════════════════════════════════════════════════
+let lanesBuilt = false;
+
+function renderTrack(ranked) {
+  const track = document.getElementById('track');
+  const maxPos = Math.max(...ranked.map(t => t.pos)) || 1;
+  const minPos = Math.min(...ranked.map(t => t.pos)) || 0;
+  const spread = maxPos - minPos || 1;
+
+  // Lanes stay in original team order (each team owns lane i)
+  if (!lanesBuilt) {
+    track.innerHTML = TEAMS.map((team, i) => `
+      <div class="lane" id="lane-${i}">
+        <div class="finish"></div>
+        <div class="runner" id="runner-${i}" style="background:${team.color}; left:2%">
+          🏈 ${team.name}
+        </div>
+      </div>
+    `).join('');
+    lanesBuilt = true;
+  }
+
+  ranked.forEach(team => {
+    const i = TEAMS.findIndex(t => t.name === team.name);
+    const runner = document.getElementById(`runner-${i}`);
+    if (!runner) return;
+    // Normalize 5%–90% of track width
+    const pct = 5 + ((team.pos - minPos) / spread) * 83;
+    runner.style.left = `${pct.toFixed(2)}%`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  STANDINGS RENDER
+// ═══════════════════════════════════════════════════════
+const ORDINALS = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+const RANK_CLASSES = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+
+function renderStandings(ranked) {
+  const maxPos = Math.max(...ranked.map(t => t.pos)) || 1;
+  document.getElementById('standings').innerHTML = ranked.map(team => `
+    <div class="standing-row">
+      <div class="rank-num ${RANK_CLASSES[team.rank] || ''}">${team.rank}</div>
+      <div class="team-dot" style="background:${team.color}"></div>
+      <div class="team-info">
+        <div class="team-name">${team.name}</div>
+        <div class="team-owner">@${team.owner}</div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-fill" style="background:${team.color}; width:${(team.pos / maxPos * 100).toFixed(1)}%"></div>
+      </div>
+      <div class="pick-badge">${ORDINALS[team.rank - 1]}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════════════════════════
+function render() {
+  const now     = Date.now();
+  const isDone  = now >= DRAFT_END;
+  const banner  = document.getElementById('final-banner-slot');
+
+  if (isDone && !banner.children.length) {
+    banner.innerHTML = '<div class="final-banner">🏆 Race complete — draft order is locked below</div>';
+  }
+
+  const positions = computePositions(isDone ? DRAFT_END : now);
+  const ranked    = rankByPos(positions);
+  renderTrack(ranked);
+  renderStandings(ranked);
+}
+
+updateCountdown();
+render();
+setInterval(updateCountdown, 1000);
+setInterval(render, 60 * 1000); // recalculate every minute
+
+// ═══════════════════════════════════════════════════════
+//  CHAT
+// ═══════════════════════════════════════════════════════
+const AVATAR_PALETTE = [
+  '#e05252','#e8873a','#2baa8d','#d4b84a',
+  '#4a90d9','#8b63c8','#34c78a','#e84b7a','#3ea6cc','#f5c842'
+];
+
+function avatarColor(name) {
+  let h = 0;
+  for (const c of (name || '?')) h = ((h << 5) - h) + c.charCodeAt(0);
+  return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function msgHtml(msg) {
+  const color = avatarColor(msg.name);
+  const init  = (msg.name || '?')[0].toUpperCase();
+  const time  = msg.ts
+    ? new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '';
+  return `
+    <div class="msg">
+      <div class="msg-avatar" style="background:${color}">${init}</div>
+      <div>
+        <span class="msg-name" style="color:${color}">${esc(msg.name)}</span>
+        <span class="msg-time">${time}</span>
+        <div class="msg-text">${esc(msg.text)}</div>
+      </div>
+    </div>`;
+}
+
+function appendMsg(msg) {
+  const box = document.getElementById('chat-msgs');
+  box.insertAdjacentHTML('beforeend', msgHtml(msg));
+  box.scrollTop = box.scrollHeight;
+}
+
+// Persist name across reloads
+const savedName = localStorage.getItem('draft-race-name') || '';
+if (savedName) document.getElementById('name-in').value = savedName;
+document.getElementById('name-in').addEventListener('blur', e => {
+  localStorage.setItem('draft-race-name', e.target.value.trim());
+});
+
+const firebaseReady = FB.apiKey && FB.databaseURL;
+
+if (!firebaseReady) {
+  // ── LOCAL-ONLY FALLBACK ──────────────────────
+  document.getElementById('chat-setup').innerHTML = `
+    <div class="setup-note">
+      <strong>Chat is local-only right now.</strong> Messages only appear on your device.
+      To enable real-time chat for the whole league, add Firebase config to this file:
+      <code>FIREBASE_CONFIG</code> near the top of the script.
+      <br><br>
+      Steps: <strong>console.firebase.google.com</strong> → New project → Realtime Database →
+      Start in test mode → Project settings → Your apps → Web → copy config here.
+    </div>`;
+
+  document.getElementById('send-btn').addEventListener('click', sendLocal);
+  document.getElementById('msg-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendLocal(); });
+
+  function sendLocal() {
+    const nameEl = document.getElementById('name-in');
+    const msgEl  = document.getElementById('msg-in');
+    const name   = nameEl.value.trim() || 'Anonymous';
+    const text   = msgEl.value.trim();
+    if (!text) return;
+    localStorage.setItem('draft-race-name', name);
+    appendMsg({ name, text, ts: Date.now() });
+    msgEl.value = '';
+  }
+
+} else {
+  // ── FIREBASE REAL-TIME CHAT ──────────────────
+  (async () => {
+    const { initializeApp }                         = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const { getDatabase, ref, push, query, limitToLast, onChildAdded }
+      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+
+    const app   = initializeApp(FB);
+    const db    = getDatabase(app);
+    const msgs  = ref(db, 'draft-race-2026/chat');
+
+    onChildAdded(query(msgs, limitToLast(50)), snap => appendMsg(snap.val()));
+
+    function sendFirebase() {
+      const nameEl = document.getElementById('name-in');
+      const msgEl  = document.getElementById('msg-in');
+      const name   = nameEl.value.trim() || 'Anonymous';
+      const text   = msgEl.value.trim();
+      if (!text) return;
+      localStorage.setItem('draft-race-name', name);
+      push(msgs, { name, text, ts: Date.now() });
+      msgEl.value = '';
+    }
+
+    document.getElementById('send-btn').addEventListener('click', sendFirebase);
+    document.getElementById('msg-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendFirebase(); });
+  })();
+}
+</script>
+</body>
+</html>
