@@ -130,7 +130,7 @@
 
     .field {
       position: relative;
-      width: 100%; height: 560px;
+      width: 100%; height: 620px;
       background: #2e8b3e;
       border-radius: 6px;
       overflow: hidden;
@@ -202,7 +202,30 @@
       cursor: pointer;
     }
 
-    .runner svg { display:block; width:28px; height:44px; image-rendering:pixelated; image-rendering:crisp-edges; }
+    .runner svg { display:none; } /* hidden — replaced by runner-card */
+
+    /* player card replaces SVG sprite */
+    .runner-card {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      pointer-events: none;
+    }
+    .runner-avatar-img {
+      width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+      border: 2px solid var(--glow, #fff);
+      box-shadow: 0 0 6px var(--glow, rgba(255,255,255,0.4));
+      display: block;
+    }
+    .runner-name-lbl {
+      font-size: 7px; font-weight: 800; color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+      white-space: nowrap; max-width: 60px;
+      overflow: hidden; text-overflow: ellipsis;
+      text-align: center; line-height: 1;
+    }
+    @media (max-width:600px) {
+      .runner-avatar-img { width: 22px; height: 22px; }
+      .runner-name-lbl   { font-size: 5px; }
+    }
 
     /* my-team pulse ring */
     @keyframes my-ring {
@@ -760,6 +783,10 @@ function buildLanes() {
            style="left:13%; animation-delay:${i*0.043}s; --glow:${team.color}88">
         <div class="rank-badge" id="rank-${i}">—</div>
         <div class="runner-tip" id="tip-${i}">${team.name}<br>@${team.owner}</div>
+        <div class="runner-card">
+          <img class="runner-avatar-img" src="${team.avatar}" alt="${team.owner}">
+          <div class="runner-name-lbl">${team.owner}</div>
+        </div>
         ${runnerSVG(team.color)}
       </div>
     </div>`).join('');
