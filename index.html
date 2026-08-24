@@ -395,7 +395,8 @@
     .s-row:hover { background:rgba(255,255,255,0.02); }
     .s-rank { font-size:1rem; font-weight:900; min-width:1.4rem; color:var(--muted); }
     .s-rank.r1{color:#ffd700} .s-rank.r2{color:#c0c0c0} .s-rank.r3{color:#cd7f32}
-    .s-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .s-avatar { width:36px; height:36px; border-radius:50%; flex-shrink:0; object-fit:cover; border:2px solid transparent; }
+    .s-leader .s-avatar { border-color:#ffd700; box-shadow:0 0 8px rgba(255,215,0,0.5); }
     .s-info { flex:1; min-width:0; }
     .s-name { font-size:0.83rem; font-weight:600; }
     .s-owner { font-size:0.68rem; color:var(--muted); }
@@ -453,19 +454,22 @@
     .modal h2 { font-size: 1.4rem; font-weight: 900; margin-bottom: 0.35rem; }
     .modal p  { font-size: 0.83rem; color: var(--muted); margin-bottom: 1.25rem; }
     .team-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem;
     }
+    @media (max-width: 540px) { .team-grid { grid-template-columns: repeat(3, 1fr); } }
     .team-btn {
-      display: flex; align-items: center; gap: 0.6rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
       background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.65rem 0.85rem; cursor: pointer;
+      border-radius: 10px; padding: 1rem 0.75rem; cursor: pointer;
       font-size: 0.8rem; font-weight: 600; color: var(--text);
       transition: background 0.15s, border-color 0.15s;
       text-align: left;
     }
     .team-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
-    .team-btn-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .team-btn-owner { font-size: 0.65rem; color: var(--muted); display: block; margin-top: 1px; }
+    .team-btn-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid transparent; }
+    .team-btn:hover .team-btn-avatar { border-color: rgba(255,255,255,0.4); }
+    .team-btn-name { font-size: 0.78rem; font-weight: 700; text-align: center; line-height: 1.2; }
+    .team-btn-owner { font-size: 0.62rem; color: var(--muted); display: block; text-align: center; }
   </style>
 </head>
 <body>
@@ -559,16 +563,16 @@ const FB = {
 //  TEAMS
 // ═══════════════════════════════════════════════════════
 const TEAMS = [
-  { name:"Howie Roseman Stan",     owner:"knewk",         color:"#d94f4f" },
-  { name:"A Plane hit the Bower",  owner:"hungrygunter",  color:"#e07c30" },
-  { name:"Amon-Ra St. Downs",      owner:"JaxStroh",      color:"#29b08a" },
-  { name:"CeeDeez Veiny Lambchop", owner:"NotWeirdWild",  color:"#c9b340" },
-  { name:"LoveTneck",              owner:"zanetaylor21",  color:"#4a8fd4" },
-  { name:"Costco Guys",            owner:"Sorenlind",     color:"#8b5fc4" },
-  { name:"Many Men",               owner:"noahness10",    color:"#33c47a" },
-  { name:"Darty People",           owner:"PenIsland7",    color:"#e04080" },
-  { name:"Capitol Stormers",       owner:"xavierkolb",    color:"#3090c0" },
-  { name:"2 inches (combined)",    owner:"mcgannon12",    color:"#e8c040" },
+  { name:"Howie Roseman Stan",     owner:"knewk",         color:"#d94f4f", avatar:"https://sleepercdn.com/avatars/878587ad4db64a84e639acab65a53abc.jpg" },
+  { name:"A Plane hit the Bower",  owner:"hungrygunter",  color:"#e07c30", avatar:"https://sleepercdn.com/avatars/ab24841a4b8f1dacefb7a6512b102b80.jpg" },
+  { name:"Amon-Ra St. Downs",      owner:"JaxStroh",      color:"#29b08a", avatar:"https://sleepercdn.com/avatars/e7af4deab0289b4f5505646424895246.jpg" },
+  { name:"CeeDeez Veiny Lambchop", owner:"NotWeirdWild",  color:"#c9b340", avatar:"https://sleepercdn.com/avatars/1290e2c5969b10a17884c514dea3c246.jpg" },
+  { name:"LoveTneck",              owner:"zanetaylor21",  color:"#4a8fd4", avatar:"https://sleepercdn.com/avatars/e7af4deab0289b4f5505646424895246.jpg" },
+  { name:"Costco Guys",            owner:"Sorenlind",     color:"#8b5fc4", avatar:"https://sleepercdn.com/avatars/e7af4deab0289b4f5505646424895246.jpg" },
+  { name:"Many Men",               owner:"noahness10",    color:"#33c47a", avatar:"https://sleepercdn.com/avatars/afe084c4238554be7b402ed85f953e93.jpg" },
+  { name:"Darty People",           owner:"PenIsland7",    color:"#e04080", avatar:"https://sleepercdn.com/avatars/82aec8e811b839b8ec25d7b458afd57b.jpg" },
+  { name:"Capitol Stormers",       owner:"xavierkolb",    color:"#3090c0", avatar:"https://sleepercdn.com/avatars/d74cfa986aca87ce83d07d975b83fb7d.jpg" },
+  { name:"2 inches (combined)",    owner:"mcgannon12",    color:"#e8c040", avatar:"https://sleepercdn.com/avatars/b319fdf8b7b5b0359d3c78622ba4d70c.jpg" },
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -837,7 +841,7 @@ function renderStandings(ranked) {
     return `
     <div class="s-row${t.rank===1?' s-leader':''}">
       <div class="s-rank ${RANK_CLS[t.rank]||''}">${t.rank===1?'👑':t.rank}</div>
-      <div class="s-dot" style="background:${t.color}"></div>
+      <img class="s-avatar" src="${t.avatar}" alt="${t.owner}" style="border-color:${t.color}44">
       <div class="s-info">
         <div class="s-name">${t.name}</div>
         <div class="s-owner">@${t.owner}</div>
@@ -951,12 +955,10 @@ function renderChatWho() {
 
 function buildTeamGrid() {
   document.getElementById('team-grid').innerHTML = TEAMS.map(t => `
-    <button class="team-btn" data-name="${t.name}">
-      <div class="team-btn-dot" style="background:${t.color}"></div>
-      <div>
-        ${t.name}
-        <span class="team-btn-owner">@${t.owner}</span>
-      </div>
+    <button class="team-btn" data-name="${t.name}" style="border-color:${t.color}22">
+      <img class="team-btn-avatar" src="${t.avatar}" alt="${t.owner}" style="border-color:${t.color}">
+      <div class="team-btn-name">${t.name}</div>
+      <span class="team-btn-owner">@${t.owner}</span>
     </button>`).join('');
   document.querySelectorAll('.team-btn').forEach(btn => {
     btn.addEventListener('click', () => {
