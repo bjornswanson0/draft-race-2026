@@ -567,18 +567,24 @@ const FB = {
 // ═══════════════════════════════════════════════════════
 //  TEAMS
 // ═══════════════════════════════════════════════════════
+function makeAvatar(initials, color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="${color}"/><text x="32" y="32" dominant-baseline="central" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="22" fill="#fff">${initials}</text></svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+}
+
 const TEAMS = [
-  { name:"Howie Roseman Stan",     owner:"knewk",         color:"#d94f4f", avatar:"https://sleepercdn.com/avatars/878587ad4db64a84e639acab65a53abc.jpg" },
-  { name:"A Plane hit the Bower",  owner:"hungrygunter",  color:"#e07c30", avatar:"https://sleepercdn.com/avatars/ab24841a4b8f1dacefb7a6512b102b80.jpg" },
-  { name:"Amon-Ra St. Downs",      owner:"JaxStroh",      color:"#29b08a", avatar:"https://sleepercdn.com/avatars/e7af4deab0289b4f5505646424895246.jpg" },
-  { name:"CeeDeez Veiny Lambchop", owner:"NotWeirdWild",  color:"#c9b340", avatar:"https://sleepercdn.com/avatars/1290e2c5969b10a17884c514dea3c246.jpg" },
-  { name:"LoveTneck",              owner:"zanetaylor21",  color:"#4a8fd4", avatar:"https://sleepercdn.com/avatars/e7af4deab0289b4f5505646424895246.jpg" },
-  { name:"Costco Guys",            owner:"Sorenlind",     color:"#8b5fc4", avatar:"https://sleepercdn.com/avatars/e7af4deab0289b4f5505646424895246.jpg" },
-  { name:"Many Men",               owner:"noahness10",    color:"#33c47a", avatar:"https://sleepercdn.com/avatars/afe084c4238554be7b402ed85f953e93.jpg" },
-  { name:"Darty People",           owner:"PenIsland7",    color:"#e04080", avatar:"https://sleepercdn.com/avatars/82aec8e811b839b8ec25d7b458afd57b.jpg" },
-  { name:"Capitol Stormers",       owner:"xavierkolb",    color:"#3090c0", avatar:"https://sleepercdn.com/avatars/d74cfa986aca87ce83d07d975b83fb7d.jpg" },
-  { name:"2 inches (combined)",    owner:"mcgannon12",    color:"#e8c040", avatar:"https://sleepercdn.com/avatars/b319fdf8b7b5b0359d3c78622ba4d70c.jpg" },
+  { name:"Howie Roseman Stan",     owner:"knewk",         color:"#d94f4f", initials:"KN" },
+  { name:"A Plane hit the Bower",  owner:"hungrygunter",  color:"#e07c30", initials:"HG" },
+  { name:"Amon-Ra St. Downs",      owner:"JaxStroh",      color:"#29b08a", initials:"JS" },
+  { name:"CeeDeez Veiny Lambchop", owner:"NotWeirdWild",  color:"#c9b340", initials:"NW" },
+  { name:"LoveTneck",              owner:"zanetaylor21",  color:"#4a8fd4", initials:"ZT" },
+  { name:"Costco Guys",            owner:"Sorenlind",     color:"#8b5fc4", initials:"SL" },
+  { name:"Many Men",               owner:"noahness10",    color:"#33c47a", initials:"NN" },
+  { name:"Darty People",           owner:"PenIsland7",    color:"#e04080", initials:"PI" },
+  { name:"Capitol Stormers",       owner:"xavierkolb",    color:"#3090c0", initials:"XK" },
+  { name:"2 inches (combined)",    owner:"mcgannon12",    color:"#e8c040", initials:"MC" },
 ];
+TEAMS.forEach(t => { t.avatar = makeAvatar(t.initials, t.color); });
 
 // ═══════════════════════════════════════════════════════
 //  RACE ENGINE
