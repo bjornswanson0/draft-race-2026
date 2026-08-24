@@ -6,11 +6,11 @@
   <title>Draft Day Race 2026</title>
   <style>
     :root {
-      --bg: #090d14;
-      --surface: #111720;
-      --border: #222c3a;
+      --bg: #070b12;
+      --surface: #0f1520;
+      --border: #1e2a3a;
       --text: #e8edf5;
-      --muted: #6a7a8e;
+      --muted: #5a6a7e;
       --accent: #f0b132;
     }
 
@@ -22,12 +22,20 @@
       color: var(--text);
     }
 
-    /* ── HEADER ─────────────────────────── */
+    /* ── HEADER ─────────────────────────────── */
     .header {
-      background: linear-gradient(160deg, #12063a 0%, #090d14 65%);
+      background: linear-gradient(160deg, #130840 0%, #070b12 65%);
       border-bottom: 3px solid var(--accent);
-      padding: 2rem 1.5rem 1.75rem;
+      padding: 2rem 1.5rem 1.5rem;
       text-align: center;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.4rem;
     }
 
     .eyebrow {
@@ -35,8 +43,31 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 0.4rem;
     }
+
+    .live-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(255,50,50,0.12);
+      border: 1px solid rgba(255,80,80,0.28);
+      color: #ff5f5f;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      padding: 0.18rem 0.55rem;
+      border-radius: 20px;
+    }
+
+    .live-dot::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #ff5f5f;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
     .header h1 {
       font-size: clamp(2rem, 7vw, 4rem);
@@ -44,409 +75,270 @@
       letter-spacing: -0.02em;
       color: #fff;
       line-height: 1;
-      text-shadow: 0 0 80px rgba(240,177,50,0.18);
+      text-shadow: 0 0 80px rgba(240,177,50,0.2);
     }
     .header h1 em { color: var(--accent); font-style: normal; }
 
-    .header-sub { margin-top: 0.5rem; color: var(--muted); font-size: 0.85rem; }
+    .header-sub { margin-top: 0.45rem; color: var(--muted); font-size: 0.83rem; }
 
-    /* ── COUNTDOWN ──────────────────────── */
+    /* ── COUNTDOWN ──────────────────────────── */
     .countdown {
-      display: flex;
-      justify-content: center;
-      gap: 0.6rem;
-      margin-top: 1.5rem;
-      flex-wrap: wrap;
+      display: flex; justify-content: center; gap: 0.6rem;
+      margin-top: 1.5rem; flex-wrap: wrap;
     }
-
     .cd-unit {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
-      padding: 0.6rem 1rem;
-      min-width: 65px;
-      text-align: center;
+      padding: 0.6rem 0.95rem; min-width: 64px; text-align: center;
     }
+    .cd-num { font-size: 2rem; font-weight: 800; color: var(--accent); line-height:1; font-variant-numeric:tabular-nums; }
+    .cd-lbl { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top:0.2rem; }
 
-    .cd-num {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--accent);
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-    }
+    /* ── FIELD ──────────────────────────────── */
+    .field-outer { max-width: 1200px; margin: 1.75rem auto 0; padding: 0 1rem; }
 
-    .cd-lbl {
-      font-size: 0.58rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-top: 0.2rem;
-    }
-
-    /* ── FIELD WRAPPER ──────────────────── */
-    .field-outer {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-
-    /* ── FOOTBALL FIELD ─────────────────── */
     .field {
       position: relative;
-      width: 100%;
-      height: 560px;
+      width: 100%; height: 560px;
       background: #2e8b3e;
       border-radius: 6px;
       overflow: hidden;
-      box-shadow: 0 10px 50px rgba(0,0,0,0.6), inset 0 0 0 3px rgba(255,255,255,0.12);
+      box-shadow: 0 12px 50px rgba(0,0,0,0.65), inset 0 0 0 3px rgba(255,255,255,0.1);
     }
 
     /* alternating turf bands */
     .field::before {
       content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        90deg,
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(90deg,
         rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.04) 10%,
-        transparent 10%, transparent 20%
-      );
-      pointer-events: none;
-      z-index: 0;
+        transparent 10%, transparent 20%);
+      pointer-events: none; z-index: 0;
     }
 
-    /* ── END ZONES ──────────────────────── */
+    /* end zones */
     .ez {
-      position: absolute;
-      top: 0; bottom: 0;
-      width: 12%;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+      position: absolute; top:0; bottom:0; width:12%; z-index:1;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
     }
-
-    .ez-left  { left: 0;  background: #b52020; }
-    .ez-right { right: 0; background: #1a3a8a; }
-
+    .ez-left  { left:0;  background: #b52020; }
+    .ez-right { right:0; background: #1a3a8a; }
     .ez-text {
-      font-size: clamp(0.6rem, 1.5vw, 1rem);
-      font-weight: 900;
-      letter-spacing: 0.25em;
-      color: rgba(255,255,255,0.35);
-      writing-mode: vertical-rl;
+      font-size: clamp(0.55rem,1.4vw,0.95rem); font-weight:900;
+      letter-spacing:0.25em; color:rgba(255,255,255,0.32); writing-mode:vertical-rl;
     }
+    .ez-left .ez-text { transform: rotate(180deg); }
 
-    .ez-left  .ez-text { transform: rotate(180deg); }
+    /* playing field */
+    .pf { position:absolute; left:12%; right:12%; top:0; bottom:0; z-index:2; }
 
-    /* ── PLAYING FIELD AREA ─────────────── */
-    .pf {
-      position: absolute;
-      left: 12%; right: 12%;
-      top: 0; bottom: 0;
-      z-index: 2;
-    }
-
-    /* yard lines */
-    .yl {
-      position: absolute;
-      top: 0; bottom: 0;
-      width: 2px;
-      background: rgba(255,255,255,0.55);
-      pointer-events: none;
-    }
-
-    /* hash marks */
-    .hash {
-      position: absolute;
-      width: 10px;
-      height: 2px;
-      background: rgba(255,255,255,0.4);
-      pointer-events: none;
-    }
-
-    /* yard numbers */
+    .yl { position:absolute; top:0; bottom:0; width:2px; background:rgba(255,255,255,0.5); pointer-events:none; }
+    .hash { position:absolute; width:10px; height:2px; background:rgba(255,255,255,0.38); pointer-events:none; }
     .yn {
-      position: absolute;
-      font-size: clamp(8px, 1.1vw, 12px);
-      font-weight: 800;
-      color: rgba(255,255,255,0.45);
-      transform: translateX(-50%);
-      pointer-events: none;
-      user-select: none;
+      position:absolute; font-size:clamp(7px,1vw,11px); font-weight:800;
+      color:rgba(255,255,255,0.42); transform:translateX(-50%); pointer-events:none; user-select:none;
     }
 
-    /* ── CENTER LOGO ────────────────────── */
-    .logo {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 3;
-    }
+    /* center logo */
+    .logo { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:3; opacity:0.72; }
 
-    /* ── LANES ──────────────────────────── */
-    .lanes {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 5;
-    }
+    /* lanes */
+    .lanes { position:absolute; inset:0; display:flex; flex-direction:column; z-index:5; }
+    .lane { flex:1; position:relative; border-bottom:1px solid rgba(255,255,255,0.055); }
+    .lane:last-child { border-bottom:none; }
 
-    .lane {
-      flex: 1;
-      position: relative;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .lane:last-child { border-bottom: none; }
-
-    /* team name pinned to left end zone */
+    /* team label in left end zone */
     .lane-lbl {
-      position: absolute;
-      left: 0;
-      width: 12%;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: clamp(6px, 0.9vw, 10px);
-      font-weight: 700;
-      color: rgba(255,255,255,0.85);
-      text-align: center;
-      padding: 0 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: none;
-      z-index: 6;
+      position:absolute; left:0; width:12%; top:50%; transform:translateY(-50%);
+      font-size:clamp(6px,0.85vw,9.5px); font-weight:700;
+      color:rgba(255,255,255,0.88); text-align:center; padding:0 3px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      pointer-events:none; z-index:6;
     }
 
-    /* ── RUNNER ─────────────────────────── */
+    /* rank badge on runner */
+    .rank-badge {
+      position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+      font-size:8px; font-weight:900; background:rgba(0,0,0,0.7);
+      color:#fff; padding:1px 4px; border-radius:3px; white-space:nowrap;
+      pointer-events:none; z-index:12;
+    }
+
+    /* ── RUNNER ─────────────────────────────── */
     @keyframes bob {
-      0%, 100% { transform: translateY(-50%) rotate(-1.5deg) scaleY(1); }
-      50%       { transform: translateY(-57%) rotate(1.5deg) scaleY(0.95); }
+      0%,100% { transform: translateY(-50%) rotate(-1.5deg) scaleY(1); }
+      50%      { transform: translateY(-58%) rotate(1.5deg) scaleY(0.94); }
     }
 
     .runner {
-      position: absolute;
-      top: 50%;
-      /* transition set dynamically by JS — starts as ease-out, switches to linear */
-      z-index: 10;
-      animation: bob 0.42s ease-in-out infinite;
+      position:absolute; top:50%;
+      /* NO css transition — rAF handles movement */
+      z-index:10;
+      animation: bob 0.44s ease-in-out infinite;
+      cursor: pointer;
     }
 
-    .runner svg {
-      display: block;
-      width: 28px;
-      height: 44px;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
+    .runner svg { display:block; width:28px; height:44px; image-rendering:pixelated; image-rendering:crisp-edges; }
+
+    /* speed-trail on surge */
+    @keyframes trail-fade {
+      0%   { opacity:0.65; transform:scaleX(0); transform-origin:right center; }
+      100% { opacity:0;    transform:scaleX(1); transform-origin:right center; }
     }
 
-    /* brief brightness flash on a big move */
-    .runner.surge {
-      filter: brightness(2) saturate(1.5);
-      transition: filter 0.15s;
+    .runner.surging::before {
+      content:''; position:absolute; right:100%; top:28%; height:44%;
+      width:55px; background:linear-gradient(to left, rgba(255,255,180,0.55), transparent);
+      animation:trail-fade 0.55s ease-out forwards; pointer-events:none;
     }
 
-    /* name tag above runner on hover */
+    /* BIG PLAY popup */
+    @keyframes bigplay-anim {
+      0%   { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+      60%  { opacity:1; transform:translateX(-50%) translateY(-18px) scale(1.4); }
+      100% { opacity:0; transform:translateX(-50%) translateY(-32px) scale(0.85); }
+    }
+
+    .big-play-popup {
+      position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%);
+      font-size:10px; font-weight:900; white-space:nowrap; pointer-events:none;
+      animation:bigplay-anim 1.1s ease-out forwards; z-index:30;
+      text-shadow:0 0 10px currentColor;
+    }
+
+    /* hover tooltip */
     .runner::after {
       content: attr(data-name);
-      position: absolute;
-      bottom: calc(100% + 4px);
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.9);
-      color: #fff;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 3px 7px;
-      border-radius: 3px;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s;
-      z-index: 20;
+      position:absolute; bottom:calc(100% + 22px); left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,0.9); color:#fff; font-size:9px; font-weight:700;
+      padding:3px 7px; border-radius:3px; white-space:nowrap;
+      pointer-events:none; opacity:0; transition:opacity 0.15s; z-index:25;
+    }
+    .runner:hover::after { opacity:1; }
+
+    @media (max-width:600px) {
+      .field { height:360px; }
+      .runner svg { width:18px; height:28px; }
     }
 
-    .runner:hover::after { opacity: 1; }
+    /* ── PLAY BY PLAY ───────────────────────── */
+    .pbp-outer { max-width:1200px; margin:0.9rem auto 0; padding:0 1rem; }
 
-    /* ── FINAL BANNER ───────────────────── */
-    .final-banner {
-      text-align: center;
-      padding: 0.85rem;
-      background: rgba(240,177,50,0.08);
-      border: 1px solid rgba(240,177,50,0.22);
-      border-radius: 8px;
-      color: var(--accent);
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin: 0 1rem 0.5rem;
-    }
-
-    /* ── BELOW-FIELD LAYOUT ─────────────── */
-    .below {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem 2.5rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    @media (max-width: 680px) {
-      .below { grid-template-columns: 1fr; }
-      .field { height: 360px; }
-      .runner svg { width: 18px; height: 28px; }
-    }
-
-    /* ── CARD ───────────────────────────── */
-    .card {
+    .pbp {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
+      border-radius: 10px; overflow:hidden;
     }
 
-    .card-head {
-      padding: 0.75rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.68rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
+    .pbp-head {
+      padding:0.65rem 1.25rem;
+      border-bottom:1px solid var(--border);
+      font-size:0.68rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);
+      display:flex; align-items:center; gap:0.5rem;
     }
 
-    /* ── STANDINGS ──────────────────────── */
-    .s-row {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      padding: 0.6rem 1.25rem;
-      border-bottom: 1px solid rgba(255,255,255,0.025);
-      transition: background 0.12s;
-    }
-    .s-row:last-child { border-bottom: none; }
-    .s-row:hover { background: rgba(255,255,255,0.02); }
-
-    .s-rank {
-      font-size: 1rem;
-      font-weight: 900;
-      min-width: 1.4rem;
-      color: var(--muted);
-    }
-    .s-rank.r1 { color: #ffd700; }
-    .s-rank.r2 { color: #c0c0c0; }
-    .s-rank.r3 { color: #cd7f32; }
-
-    .s-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-    .s-info { flex: 1; min-width: 0; }
-    .s-name  { font-size: 0.83rem; font-weight: 600; }
-    .s-owner { font-size: 0.68rem; color: var(--muted); }
-
-    .s-pick {
-      font-size: 0.68rem; font-weight: 700;
-      background: rgba(240,177,50,0.1);
-      color: var(--accent);
-      padding: 0.15rem 0.5rem;
-      border-radius: 20px;
-      flex-shrink: 0;
+    .pbp-head::before {
+      content:''; width:6px; height:6px; border-radius:50%;
+      background:#ff4444; animation:blink 1.4s ease-in-out infinite;
     }
 
-    .s-bar { width: 70px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
-    .s-fill { height: 100%; border-radius: 2px; transition: width 2s ease; }
+    .pbp-list { padding:0.5rem 0; min-height:56px; }
 
-    @media (max-width: 480px) {
-      .s-bar { display: none; }
-      .s-owner { display: none; }
+    .pbp-event {
+      padding:0.35rem 1.25rem;
+      font-size:0.82rem; line-height:1.4; color:#bfcfdf;
+      animation: event-in 0.35s ease;
+      border-bottom:1px solid rgba(255,255,255,0.025);
+    }
+    .pbp-event:last-child { border-bottom:none; }
+
+    @keyframes event-in {
+      from { opacity:0; transform:translateX(-10px); background:rgba(240,177,50,0.08); }
+      to   { opacity:1; transform:translateX(0);      background:transparent; }
     }
 
-    /* ── CHAT ───────────────────────────── */
-    .chat-msgs {
-      height: 250px;
-      overflow-y: auto;
-      padding: 0.75rem 1.25rem;
-      display: flex; flex-direction: column; gap: 0.6rem;
-    }
-    .chat-msgs::-webkit-scrollbar { width: 3px; }
-    .chat-msgs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .pbp-event strong { color:#fff; }
 
-    .msg { display: flex; gap: 0.55rem; animation: fadeUp 0.2s ease; }
-    @keyframes fadeUp { from { opacity:0; transform:translateY(4px); } to { opacity:1; } }
+    /* ── BELOW (standings + chat) ───────────── */
+    .below { max-width:1200px; margin:0.9rem auto 0; padding:0 1rem 2.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    @media (max-width:680px) { .below { grid-template-columns:1fr; } }
 
-    .msg-av {
-      width: 24px; height: 24px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.62rem; font-weight: 800; flex-shrink: 0; color: #fff;
-    }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .card-head { padding:0.72rem 1.25rem; border-bottom:1px solid var(--border); font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); }
 
-    .msg-name  { font-weight: 700; font-size: 0.78rem; }
-    .msg-ts    { font-size: 0.62rem; color: var(--muted); margin-left: 0.3rem; }
-    .msg-text  { font-size: 0.83rem; color: #c5d0dc; line-height: 1.45; margin-top: 0.1rem; word-break: break-word; }
+    /* standings */
+    .s-row { display:flex; align-items:center; gap:0.7rem; padding:0.58rem 1.25rem; border-bottom:1px solid rgba(255,255,255,0.025); transition:background 0.12s; }
+    .s-row:last-child { border-bottom:none; }
+    .s-row:hover { background:rgba(255,255,255,0.02); }
+    .s-rank { font-size:1rem; font-weight:900; min-width:1.4rem; color:var(--muted); }
+    .s-rank.r1{color:#ffd700} .s-rank.r2{color:#c0c0c0} .s-rank.r3{color:#cd7f32}
+    .s-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .s-info { flex:1; min-width:0; }
+    .s-name { font-size:0.83rem; font-weight:600; }
+    .s-owner { font-size:0.68rem; color:var(--muted); }
+    .s-pick { font-size:0.68rem; font-weight:700; background:rgba(240,177,50,0.1); color:var(--accent); padding:0.15rem 0.5rem; border-radius:20px; flex-shrink:0; }
+    .s-bar { width:70px; height:3px; background:var(--border); border-radius:2px; overflow:hidden; flex-shrink:0; }
+    .s-fill { height:100%; border-radius:2px; }
+    @media (max-width:480px) { .s-bar{display:none} .s-owner{display:none} }
 
-    .chat-form {
-      display: flex; gap: 0.5rem;
-      padding: 0.8rem 1.25rem;
-      border-top: 1px solid var(--border);
-    }
-    .chat-form input {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 7px; padding: 0.5rem 0.75rem;
-      color: var(--text); font-size: 0.83rem; outline: none;
-    }
-    .chat-form input:focus { border-color: var(--accent); }
-    #name-in { width: 105px; flex-shrink: 0; }
-    #msg-in  { flex: 1; }
+    /* final banner */
+    .final-banner { text-align:center; padding:0.85rem; background:rgba(240,177,50,0.07); border:1px solid rgba(240,177,50,0.2); border-radius:8px; color:var(--accent); font-weight:800; letter-spacing:0.06em; text-transform:uppercase; margin:0 1rem 0.5rem; }
 
-    .chat-form button {
-      background: var(--accent); color: #000; border: none;
-      border-radius: 7px; padding: 0.5rem 0.95rem;
-      font-weight: 800; font-size: 0.83rem; cursor: pointer;
-      flex-shrink: 0;
-    }
-    .chat-form button:hover { opacity: 0.85; }
-
-    .setup-note {
-      margin: 0.6rem 1.25rem;
-      padding: 0.7rem 0.9rem;
-      background: rgba(240,177,50,0.05);
-      border: 1px solid rgba(240,177,50,0.15);
-      border-radius: 7px;
-      font-size: 0.75rem; color: #c0a040; line-height: 1.65;
-    }
-    .setup-note strong { color: var(--accent); }
+    /* chat */
+    .chat-msgs { height:240px; overflow-y:auto; padding:0.7rem 1.25rem; display:flex; flex-direction:column; gap:0.55rem; }
+    .chat-msgs::-webkit-scrollbar{width:3px} .chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .msg { display:flex; gap:0.55rem; animation:fadeUp 0.2s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(4px)} to{opacity:1} }
+    .msg-av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.62rem; font-weight:800; flex-shrink:0; color:#fff; }
+    .msg-name { font-weight:700; font-size:0.78rem; }
+    .msg-ts   { font-size:0.62rem; color:var(--muted); margin-left:0.3rem; }
+    .msg-text { font-size:0.83rem; color:#c5d0dc; line-height:1.45; margin-top:0.1rem; word-break:break-word; }
+    .chat-form { display:flex; gap:0.5rem; padding:0.8rem 1.25rem; border-top:1px solid var(--border); }
+    .chat-form input { background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:0.5rem 0.75rem; color:var(--text); font-size:0.83rem; outline:none; }
+    .chat-form input:focus { border-color:var(--accent); }
+    #name-in { width:105px; flex-shrink:0; }
+    #msg-in  { flex:1; }
+    .chat-form button { background:var(--accent); color:#000; border:none; border-radius:7px; padding:0.5rem 0.95rem; font-weight:800; font-size:0.83rem; cursor:pointer; flex-shrink:0; }
+    .chat-form button:hover { opacity:0.85; }
+    .setup-note { margin:0.6rem 1.25rem; padding:0.7rem 0.9rem; background:rgba(240,177,50,0.05); border:1px solid rgba(240,177,50,0.15); border-radius:7px; font-size:0.75rem; color:#c0a040; line-height:1.65; }
+    .setup-note strong { color:var(--accent); }
   </style>
 </head>
 <body>
 
-<!-- ═══ HEADER ════════════════════════════════ -->
+<!-- ═══ HEADER ══════════════════════════════════════ -->
 <div class="header">
-  <div class="eyebrow">Fantasy Football · 2026 Season</div>
+  <div class="header-top">
+    <span class="eyebrow">Fantasy Football · 2026 Season</span>
+    <span class="live-dot">LIVE</span>
+  </div>
   <h1>DRAFT DAY <em>RACE</em></h1>
   <p class="header-sub">First to the end zone picks first. Draft locks September 2 at 8 PM ET.</p>
   <div class="countdown" id="countdown"></div>
 </div>
 
-<!-- ═══ FIELD ═════════════════════════════════ -->
+<!-- ═══ FIELD ════════════════════════════════════════ -->
 <div class="field-outer">
   <div id="final-slot"></div>
   <div class="field" id="field">
-    <!-- end zones -->
     <div class="ez ez-left"><span class="ez-text">START</span></div>
     <div class="ez ez-right"><span class="ez-text">FINISH</span></div>
-    <!-- playing field (injected by JS) -->
     <div class="pf" id="pf"></div>
-    <!-- lanes + runners (injected by JS) -->
     <div class="lanes" id="lanes"></div>
   </div>
 </div>
 
-<!-- ═══ STANDINGS + CHAT ══════════════════════ -->
+<!-- ═══ PLAY BY PLAY ═════════════════════════════════ -->
+<div class="pbp-outer">
+  <div class="pbp">
+    <div class="pbp-head">Play by Play</div>
+    <div class="pbp-list" id="pbp-list"></div>
+  </div>
+</div>
+
+<!-- ═══ STANDINGS + CHAT ════════════════════════════ -->
 <div class="below">
   <div class="card">
     <div class="card-head">📋 Current Draft Order</div>
@@ -467,45 +359,35 @@
 <script>
 // ═══════════════════════════════════════════════════════
 //  FIREBASE CONFIG — paste your config here for live chat
-//  Race and standings work without it.
 // ═══════════════════════════════════════════════════════
 const FB = {
-  apiKey:            "",
-  authDomain:        "",
-  databaseURL:       "",
-  projectId:         "",
-  storageBucket:     "",
-  messagingSenderId: "",
-  appId:             ""
+  apiKey:"", authDomain:"", databaseURL:"",
+  projectId:"", storageBucket:"", messagingSenderId:"", appId:""
 };
 
 // ═══════════════════════════════════════════════════════
 //  TEAMS
 // ═══════════════════════════════════════════════════════
 const TEAMS = [
-  { name: "Howie Roseman Stan",     owner: "knewk",         color: "#d94f4f" },
-  { name: "A Plane hit the Bower",  owner: "hungrygunter",  color: "#e07c30" },
-  { name: "Amon-Ra St. Downs",      owner: "JaxStroh",      color: "#29b08a" },
-  { name: "CeeDeez Veiny Lambchop", owner: "NotWeirdWild",  color: "#c9b340" },
-  { name: "LoveTneck",              owner: "zanetaylor21",  color: "#4a8fd4" },
-  { name: "Costco Guys",            owner: "Sorenlind",     color: "#8b5fc4" },
-  { name: "Many Men",               owner: "noahness10",    color: "#33c47a" },
-  { name: "Darty People",           owner: "PenIsland7",    color: "#e04080" },
-  { name: "Capitol Stormers",       owner: "xavierkolb",    color: "#3090c0" },
-  { name: "2 inches (combined)",    owner: "mcgannon12",    color: "#e8c040" },
+  { name:"Howie Roseman Stan",     owner:"knewk",         color:"#d94f4f" },
+  { name:"A Plane hit the Bower",  owner:"hungrygunter",  color:"#e07c30" },
+  { name:"Amon-Ra St. Downs",      owner:"JaxStroh",      color:"#29b08a" },
+  { name:"CeeDeez Veiny Lambchop", owner:"NotWeirdWild",  color:"#c9b340" },
+  { name:"LoveTneck",              owner:"zanetaylor21",  color:"#4a8fd4" },
+  { name:"Costco Guys",            owner:"Sorenlind",     color:"#8b5fc4" },
+  { name:"Many Men",               owner:"noahness10",    color:"#33c47a" },
+  { name:"Darty People",           owner:"PenIsland7",    color:"#e04080" },
+  { name:"Capitol Stormers",       owner:"xavierkolb",    color:"#3090c0" },
+  { name:"2 inches (combined)",    owner:"mcgannon12",    color:"#e8c040" },
 ];
 
 // ═══════════════════════════════════════════════════════
-//  RACE TIMING
+//  RACE ENGINE
 // ═══════════════════════════════════════════════════════
-const RACE_START = new Date('2026-08-24T16:00:00Z').getTime(); // Aug 24 noon ET
-const DRAFT_END  = new Date('2026-09-03T00:00:00Z').getTime(); // Sept 2 8 PM ET
-const TICK_MS    = 2000; // 2-second ticks — live, constant movement
+const RACE_START = new Date('2026-08-24T16:00:00Z').getTime();
+const DRAFT_END  = new Date('2026-09-03T00:00:00Z').getTime();
+const TICK_MS    = 2000;
 
-// ═══════════════════════════════════════════════════════
-//  SEEDED RNG (mulberry32)
-//  Same seed = same sequence = everyone sees the same race.
-// ═══════════════════════════════════════════════════════
 function rng(seed) {
   let s = seed >>> 0;
   return () => {
@@ -516,36 +398,30 @@ function rng(seed) {
   };
 }
 
-// ── INCREMENTAL POSITION CACHE ───────────────────────
-// Each render only processes NEW ticks since the last call — O(1) per frame.
-const teamRNGs     = TEAMS.map((_, i) => rng(i * 999983 + 0xBEEFCAFE));
-const teamPos      = TEAMS.map(() => 0);
-let   computedTicks = 0;
-const surgingTeams  = new Set(); // teams that just made a big move this tick
+const teamRNGs  = TEAMS.map((_, i) => rng(i * 999983 + 0xBEEFCAFE));
+const teamPos   = TEAMS.map(() => 0);
+let computedTicks = 0;
+const surgingTeams = new Set();
 
 function computePositions(atMs) {
-  const targetTick = Math.max(0, Math.floor(
+  const target = Math.max(0, Math.floor(
     (Math.min(atMs, DRAFT_END) - RACE_START) / TICK_MS
   ));
-
   surgingTeams.clear();
-
-  while (computedTicks < targetTick) {
+  while (computedTicks < target) {
     TEAMS.forEach((_, i) => {
       const r = teamRNGs[i]();
-      // 7% chance of a surge: lands 4–12× a normal tick
       if (r < 0.07) {
         const boost = teamRNGs[i]() * 8 + 4;
         teamPos[i] += r + boost;
-        if (computedTicks === targetTick - 1) surgingTeams.add(i);
+        if (computedTicks === target - 1) surgingTeams.add(i);
       } else {
         teamPos[i] += r;
       }
     });
     computedTicks++;
   }
-
-  return TEAMS.map((team, i) => ({ ...team, pos: teamPos[i] }));
+  return TEAMS.map((t, i) => ({ ...t, pos: teamPos[i] }));
 }
 
 function rankTeams(teams) {
@@ -553,165 +429,203 @@ function rankTeams(teams) {
 }
 
 // ═══════════════════════════════════════════════════════
+//  RANK → TRACK POSITION
+//  Rank 1 → 81%, Rank 10 → 15%, evenly spaced
+// ═══════════════════════════════════════════════════════
+function rankToPct(rank) {
+  return 81 - (rank - 1) * 7.33;
+}
+
+// ═══════════════════════════════════════════════════════
 //  PIXEL ART RUNNER SVG
 // ═══════════════════════════════════════════════════════
 function runnerSVG(color) {
-  const w = 'rgba(255,255,255,0.25)';
+  const w = 'rgba(255,255,255,0.22)';
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" shape-rendering="crispEdges">
-    <!-- helmet dome -->
     <rect x="2" y="0" width="6" height="1" fill="${color}"/>
     <rect x="1" y="1" width="8" height="3" fill="${color}"/>
-    <!-- helmet center stripe -->
     <rect x="4" y="0" width="2" height="4" fill="${w}"/>
-    <!-- facemask -->
     <rect x="1" y="3" width="3" height="1" fill="#9ab"/>
-    <!-- neck/chin -->
     <rect x="3" y="4" width="3" height="1" fill="#e8b080"/>
-    <!-- jersey torso -->
     <rect x="1" y="5" width="8" height="5" fill="${color}"/>
-    <!-- number stripe -->
     <rect x="3" y="6" width="4" height="3" fill="${w}"/>
-    <!-- left arm (forward, holding ball) -->
     <rect x="0" y="5" width="1" height="3" fill="${color}"/>
-    <!-- football -->
     <rect x="0" y="7" width="2" height="2" fill="#8B4513"/>
-    <rect x="0" y="7" width="2" height="1" fill="rgba(255,255,255,0.35)"/>
-    <!-- right arm (back-swing) -->
+    <rect x="0" y="7" width="2" height="1" fill="rgba(255,255,255,0.3)"/>
     <rect x="9" y="6" width="1" height="2" fill="${color}"/>
-    <!-- pants -->
     <rect x="2" y="10" width="6" height="2" fill="#ececec"/>
-    <!-- left leg (planted, forward) -->
     <rect x="2" y="12" width="3" height="4" fill="#1a1a2a"/>
-    <!-- right leg (raised back) -->
     <rect x="5" y="11" width="3" height="3" fill="#1a1a2a"/>
-    <!-- left cleat -->
     <rect x="1" y="15" width="4" height="1" fill="#000"/>
-    <!-- right cleat -->
     <rect x="5" y="13" width="3" height="1" fill="#000"/>
   </svg>`;
 }
 
 // ═══════════════════════════════════════════════════════
-//  BUILD THE FIELD (yard lines, hash marks, logo)
+//  BUILD FIELD
 // ═══════════════════════════════════════════════════════
 function buildField() {
   const pf = document.getElementById('pf');
-  const yardLabels = [10, 20, 30, 40, 50, 40, 30, 20, 10];
+  const labels = [10,20,30,40,50,40,30,20,10];
   let html = '';
-
-  yardLabels.forEach((label, i) => {
-    const pct = ((i + 1) / 10) * 100; // 10%, 20%... 90%
-    // yard line
+  labels.forEach((label, i) => {
+    const pct = ((i+1)/10)*100;
     html += `<div class="yl" style="left:${pct}%"></div>`;
-    // numbers top and bottom
     html += `<div class="yn" style="left:${pct}%;top:8px">${label}</div>`;
     html += `<div class="yn" style="left:${pct}%;bottom:8px;top:auto">${label}</div>`;
   });
-
-  // hash marks (2 rows: 1/3 and 2/3 from top)
+  // hash marks
   for (let i = 0; i <= 20; i++) {
-    const x = (i / 20) * 100;
+    const x = (i/20)*100;
     html += `<div class="hash" style="left:calc(${x}% - 5px);top:calc(33% - 1px)"></div>`;
     html += `<div class="hash" style="left:calc(${x}% - 5px);top:calc(67% - 1px)"></div>`;
   }
-
-  // center logo
-  html += `
-    <div class="logo">
-      <svg width="110" height="120" viewBox="0 0 110 120" xmlns="http://www.w3.org/2000/svg">
-        <!-- outer shield -->
-        <path d="M55,4 L104,22 L104,60 Q104,96 55,114 Q6,96 6,60 L6,22 Z"
-              fill="#09122a" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" opacity="0.92"/>
-        <!-- inner shield fill -->
-        <path d="M55,11 L97,27 L97,60 Q97,90 55,107 Q13,90 13,60 L13,27 Z"
-              fill="#0f1f48"/>
-        <!-- accent border -->
-        <path d="M55,4 L104,22 L104,60 Q104,96 55,114 Q6,96 6,60 L6,22 Z"
-              fill="none" stroke="#f0b132" stroke-width="2" opacity="0.5"/>
-        <!-- flaming football -->
-        <ellipse cx="55" cy="65" rx="16" ry="10" fill="#7a3b10"/>
-        <ellipse cx="55" cy="65" rx="16" ry="10" fill="#8B4513"/>
-        <line x1="39" y1="65" x2="71" y2="65" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
-        <line x1="48" y1="55.5" x2="48" y2="74.5" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
-        <line x1="55" y1="55" x2="55" y2="75" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
-        <line x1="62" y1="55.5" x2="62" y2="74.5" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
-        <!-- flame -->
-        <path d="M40,62 Q36,50 44,44 Q42,53 47,50 Q44,57 50,55 Q47,62 52,60" fill="#f0b132" opacity="0.75"/>
-        <path d="M41,62 Q39,52 45,47 Q44,54 48,51 Q46,58 51,56" fill="#ff6b20" opacity="0.65"/>
-        <!-- DRAFT DAY text -->
-        <text x="55" y="38" text-anchor="middle" fill="white"
-              font-weight="900" font-size="9.5" font-family="-apple-system,sans-serif" letter-spacing="1.5">DRAFT DAY</text>
-        <!-- RACE text -->
-        <text x="55" y="100" text-anchor="middle" fill="#f0b132"
-              font-weight="900" font-size="15" font-family="-apple-system,sans-serif" letter-spacing="3">RACE</text>
-      </svg>
-    </div>`;
-
+  html += `<div class="logo">
+    <svg width="110" height="120" viewBox="0 0 110 120" xmlns="http://www.w3.org/2000/svg">
+      <path d="M55,4 L104,22 L104,60 Q104,96 55,114 Q6,96 6,60 L6,22 Z" fill="#09122a" stroke="rgba(255,255,255,0.18)" stroke-width="2.5" opacity="0.92"/>
+      <path d="M55,11 L97,27 L97,60 Q97,90 55,107 Q13,90 13,60 L13,27 Z" fill="#0f1f48"/>
+      <path d="M55,4 L104,22 L104,60 Q104,96 55,114 Q6,96 6,60 L6,22 Z" fill="none" stroke="#f0b132" stroke-width="2" opacity="0.45"/>
+      <ellipse cx="55" cy="65" rx="16" ry="10" fill="#8B4513"/>
+      <line x1="39" y1="65" x2="71" y2="65" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+      <line x1="48" y1="55.5" x2="48" y2="74.5" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <line x1="55" y1="55" x2="55" y2="75" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <line x1="62" y1="55.5" x2="62" y2="74.5" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <path d="M40,62 Q36,50 44,44 Q42,53 47,50 Q44,57 50,55 Q47,62 52,60" fill="#f0b132" opacity="0.72"/>
+      <path d="M41,62 Q39,52 45,47 Q44,54 48,51 Q46,58 51,56" fill="#ff6b20" opacity="0.62"/>
+      <text x="55" y="38" text-anchor="middle" fill="white" font-weight="900" font-size="9.5" font-family="-apple-system,sans-serif" letter-spacing="1.5">DRAFT DAY</text>
+      <text x="55" y="100" text-anchor="middle" fill="#f0b132" font-weight="900" font-size="15" font-family="-apple-system,sans-serif" letter-spacing="3">RACE</text>
+    </svg>
+  </div>`;
   pf.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════
 //  BUILD LANES
 // ═══════════════════════════════════════════════════════
-let lanesBuilt = false;
-
 function buildLanes() {
-  const el = document.getElementById('lanes');
-  el.innerHTML = TEAMS.map((team, i) => `
+  document.getElementById('lanes').innerHTML = TEAMS.map((team, i) => `
     <div class="lane" id="lane-${i}">
-      <div class="lane-lbl" style="color:rgba(255,255,255,0.9)">${team.name}</div>
-      <div class="runner" id="runner-${i}" data-name="${team.name}" style="left:13%">
+      <div class="lane-lbl">${team.name}</div>
+      <div class="runner" id="runner-${i}" data-name="${team.name}"
+           style="left:13%; animation-delay:${i*0.043}s">
+        <div class="rank-badge" id="rank-${i}">—</div>
         ${runnerSVG(team.color)}
       </div>
-    </div>
-  `).join('');
-  lanesBuilt = true;
+    </div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════
-//  RENDER TRACK
+//  SMOOTH MOTION (requestAnimationFrame)
+//  Runners lerp toward their rank-based target position.
+//  This runs at ~60fps so movement is always visible.
 // ═══════════════════════════════════════════════════════
-function renderTrack(ranked) {
-  if (!lanesBuilt) { buildLanes(); }
+const displayPcts = TEAMS.map(() => 13); // start at left
+const targetPcts  = TEAMS.map(() => 13);
 
-  const maxPos = Math.max(...ranked.map(t => t.pos)) || 1;
-  const minPos = Math.min(...ranked.map(t => t.pos)) || 0;
-  const spread = maxPos - minPos || 1;
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function visualFrame() {
+  TEAMS.forEach((_, i) => {
+    // drift toward target + small noise so runners wiggle even when rank is stable
+    const noise = (Math.random() - 0.5) * 0.25;
+    displayPcts[i] = lerp(displayPcts[i], targetPcts[i] + noise, 0.04);
+    const el = document.getElementById(`runner-${i}`);
+    if (el) el.style.left = `${displayPcts[i].toFixed(2)}%`;
+  });
+  requestAnimationFrame(visualFrame);
+}
+
+// ═══════════════════════════════════════════════════════
+//  RACE TICK (every 2 seconds)
+//  Updates actual standings and targets for visual lerp.
+// ═══════════════════════════════════════════════════════
+const prevRanks = TEAMS.map(() => 0);
+const ORDINALS  = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+const pbpEvents = [];
+
+function logEvent(html) {
+  pbpEvents.unshift(html);
+  if (pbpEvents.length > 6) pbpEvents.pop();
+  const list = document.getElementById('pbp-list');
+  list.innerHTML = pbpEvents
+    .map(e => `<div class="pbp-event">${e}</div>`)
+    .join('');
+}
+
+function raceTick() {
+  const now    = Date.now();
+  const isDone = now >= DRAFT_END;
+  const positions = computePositions(isDone ? DRAFT_END : now);
+  const ranked    = rankTeams(positions);
+
+  if (isDone && !document.querySelector('.final-banner')) {
+    document.getElementById('final-slot').innerHTML =
+      '<div class="final-banner">🏆 Race complete — draft order is locked</div>';
+  }
 
   ranked.forEach(team => {
-    const i = TEAMS.findIndex(t => t.name === team.name);
-    const el = document.getElementById(`runner-${i}`);
-    if (!el) return;
-    // playable range: 13% → 81% (within the playing field)
-    const pct = 13 + ((team.pos - minPos) / spread) * 68;
-    el.style.left = `${pct.toFixed(2)}%`;
+    const i       = TEAMS.findIndex(t => t.name === team.name);
+    const oldRank = prevRanks[i];
+    const newRank = team.rank;
 
-    // flash the runner if they just surged
+    // update target position for visual lerp
+    targetPcts[i] = rankToPct(newRank);
+
+    // update rank badge
+    const badge = document.getElementById(`rank-${i}`);
+    if (badge) badge.textContent = ORDINALS[newRank - 1];
+
+    // surge effects
     if (surgingTeams.has(i)) {
-      el.classList.add('surge');
-      setTimeout(() => el.classList.remove('surge'), 400);
+      const el = document.getElementById(`runner-${i}`);
+      if (el) {
+        el.classList.add('surging');
+        setTimeout(() => el.classList.remove('surging'), 600);
+        const pop = document.createElement('div');
+        pop.className = 'big-play-popup';
+        pop.style.color = team.color;
+        pop.textContent = 'BIG PLAY!';
+        el.appendChild(pop);
+        setTimeout(() => pop.remove(), 1200);
+      }
+      if (oldRank && newRank < oldRank) {
+        logEvent(`🔥 <strong style="color:${team.color}">${team.name}</strong> makes a huge gain — moves up to <strong>${ORDINALS[newRank-1]}</strong>`);
+      } else {
+        logEvent(`⚡ <strong style="color:${team.color}">${team.name}</strong> surges forward!`);
+      }
+    } else if (oldRank && newRank !== oldRank) {
+      if (newRank === 1) {
+        logEvent(`🏆 <strong style="color:${team.color}">${team.name}</strong> takes the lead!`);
+      } else if (newRank < oldRank) {
+        logEvent(`📈 <strong style="color:${team.color}">${team.name}</strong> moves up to <strong>${ORDINALS[newRank-1]}</strong>`);
+      } else {
+        logEvent(`📉 <strong style="color:${team.color}">${team.name}</strong> drops to <strong>${ORDINALS[newRank-1]}</strong>`);
+      }
     }
+
+    prevRanks[i] = newRank;
   });
+
+  renderStandings(ranked);
 }
 
 // ═══════════════════════════════════════════════════════
-//  RENDER STANDINGS
+//  STANDINGS
 // ═══════════════════════════════════════════════════════
-const ORDINALS = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
-const RANK_CLS  = { 1: 'r1', 2: 'r2', 3: 'r3' };
+const RANK_CLS = { 1:'r1', 2:'r2', 3:'r3' };
 
 function renderStandings(ranked) {
   const maxPos = Math.max(...ranked.map(t => t.pos)) || 1;
   document.getElementById('standings').innerHTML = ranked.map(t => `
     <div class="s-row">
-      <div class="s-rank ${RANK_CLS[t.rank] || ''}">${t.rank}</div>
+      <div class="s-rank ${RANK_CLS[t.rank]||''}">${t.rank}</div>
       <div class="s-dot" style="background:${t.color}"></div>
       <div class="s-info">
         <div class="s-name">${t.name}</div>
         <div class="s-owner">@${t.owner}</div>
       </div>
       <div class="s-bar"><div class="s-fill" style="background:${t.color};width:${(t.pos/maxPos*100).toFixed(1)}%"></div></div>
-      <div class="s-pick">${ORDINALS[t.rank - 1]}</div>
+      <div class="s-pick">${ORDINALS[t.rank-1]}</div>
     </div>`).join('');
 }
 
@@ -722,13 +636,13 @@ function updateCountdown() {
   const rem = DRAFT_END - Date.now();
   const el  = document.getElementById('countdown');
   if (rem <= 0) {
-    el.innerHTML = '<div style="color:var(--accent);font-weight:800;font-size:1.1rem;letter-spacing:.05em">RACE COMPLETE — DRAFT ORDER IS LOCKED</div>';
+    el.innerHTML = '<div style="color:var(--accent);font-weight:800;font-size:1.1rem;letter-spacing:.05em">RACE COMPLETE — DRAFT ORDER LOCKED</div>';
     return;
   }
-  const d = Math.floor(rem / 86400000);
-  const h = Math.floor((rem % 86400000) / 3600000);
-  const m = Math.floor((rem % 3600000)  / 60000);
-  const s = Math.floor((rem % 60000)    / 1000);
+  const d = Math.floor(rem/86400000);
+  const h = Math.floor((rem%86400000)/3600000);
+  const m = Math.floor((rem%3600000)/60000);
+  const s = Math.floor((rem%60000)/1000);
   el.innerHTML = `
     <div class="cd-unit"><div class="cd-num">${d}</div><div class="cd-lbl">Days</div></div>
     <div class="cd-unit"><div class="cd-num">${String(h).padStart(2,'0')}</div><div class="cd-lbl">Hrs</div></div>
@@ -737,135 +651,73 @@ function updateCountdown() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  MAIN RENDER
+//  INIT
 // ═══════════════════════════════════════════════════════
-function render() {
-  const now    = Date.now();
-  const isDone = now >= DRAFT_END;
-
-  if (isDone && !document.querySelector('.final-banner')) {
-    const slot = document.getElementById('final-slot');
-    slot.innerHTML = '<div class="final-banner">🏆 Race is over — draft order locked below</div>';
-  }
-
-  const positions = computePositions(isDone ? DRAFT_END : now);
-  const ranked    = rankTeams(positions);
-  renderTrack(ranked);
-  renderStandings(ranked);
-}
-
-// ── INIT ────────────────────────────────────────
 buildField();
-buildLanes(); // all runners start at left:13%, no transition yet
-
+buildLanes();
 updateCountdown();
 setInterval(updateCountdown, 1000);
 
-// Phase 1: after a beat, ease runners into current positions
-setTimeout(() => {
-  document.querySelectorAll('.runner').forEach((el, i) => {
-    el.style.transition = `left 1.6s cubic-bezier(0.25,0.46,0.45,0.94)`;
-    el.style.animationDelay = `${i * 0.04}s`; // stagger bobs slightly
-  });
-  render();
+// Initial race tick to set starting ranks + targets
+raceTick();
+// Race ticks every 2 seconds
+setInterval(raceTick, TICK_MS);
 
-  // Phase 2: after the intro animation settles, switch to continuous linear ticks
-  setTimeout(() => {
-    document.querySelectorAll('.runner').forEach(el => {
-      el.style.transition = `left ${TICK_MS}ms linear`;
-    });
-    setInterval(render, TICK_MS);
-  }, 2000);
-}, 150);
+// Start the 60fps visual loop (runners lerp toward targets continuously)
+requestAnimationFrame(visualFrame);
+
+// log a welcome event
+setTimeout(() => logEvent('🏈 Race is live — check back often, the order changes fast!'), 800);
 
 // ═══════════════════════════════════════════════════════
 //  CHAT
 // ═══════════════════════════════════════════════════════
-const AV_COLORS = ['#d94f4f','#e07c30','#29b08a','#c9b340','#4a8fd4','#8b5fc4','#33c47a','#e04080','#3090c0','#e8c040'];
-
-function avatarColor(name) {
-  let h = 0;
-  for (const c of (name || '?')) h = ((h << 5) - h) + c.charCodeAt(0);
-  return AV_COLORS[Math.abs(h) % AV_COLORS.length];
-}
-
-function esc(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+const AV = ['#d94f4f','#e07c30','#29b08a','#c9b340','#4a8fd4','#8b5fc4','#33c47a','#e04080','#3090c0','#e8c040'];
+function avColor(n) { let h=0; for(const c of (n||'?')) h=((h<<5)-h)+c.charCodeAt(0); return AV[Math.abs(h)%AV.length]; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function msgHTML(m) {
-  const col  = avatarColor(m.name);
-  const init = (m.name || '?')[0].toUpperCase();
-  const time = m.ts ? new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-  return `<div class="msg">
-    <div class="msg-av" style="background:${col}">${init}</div>
-    <div>
-      <span class="msg-name" style="color:${col}">${esc(m.name)}</span>
-      <span class="msg-ts">${time}</span>
-      <div class="msg-text">${esc(m.text)}</div>
-    </div>
-  </div>`;
+  const col=avColor(m.name), init=(m.name||'?')[0].toUpperCase();
+  const time=m.ts?new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+  return `<div class="msg"><div class="msg-av" style="background:${col}">${init}</div><div><span class="msg-name" style="color:${col}">${esc(m.name)}</span><span class="msg-ts">${time}</span><div class="msg-text">${esc(m.text)}</div></div></div>`;
 }
 
 function appendMsg(m) {
-  const box = document.getElementById('chat-msgs');
-  box.insertAdjacentHTML('beforeend', msgHTML(m));
-  box.scrollTop = box.scrollHeight;
+  const box=document.getElementById('chat-msgs');
+  box.insertAdjacentHTML('beforeend',msgHTML(m));
+  box.scrollTop=box.scrollHeight;
 }
 
-// persist name
-const saved = localStorage.getItem('ddr-name') || '';
-if (saved) document.getElementById('name-in').value = saved;
-document.getElementById('name-in').addEventListener('blur', e =>
-  localStorage.setItem('ddr-name', e.target.value.trim()));
+const saved=localStorage.getItem('ddr-name')||'';
+if (saved) document.getElementById('name-in').value=saved;
+document.getElementById('name-in').addEventListener('blur',e=>localStorage.setItem('ddr-name',e.target.value.trim()));
 
 const fbReady = FB.apiKey && FB.databaseURL;
 
 if (!fbReady) {
-  document.getElementById('chat-setup').innerHTML = `
-    <div class="setup-note">
-      <strong>Chat is local-only right now</strong> — messages only show on your device.
-      To enable live chat for the league, paste your Firebase Realtime Database config
-      into the <code>FB</code> object at the top of the script.
-      (console.firebase.google.com → New project → Realtime Database → Project settings → Web app)
-    </div>`;
-
-  const doSend = () => {
-    const n = document.getElementById('name-in').value.trim() || 'Anonymous';
-    const t = document.getElementById('msg-in').value.trim();
-    if (!t) return;
-    localStorage.setItem('ddr-name', n);
-    appendMsg({ name: n, text: t, ts: Date.now() });
-    document.getElementById('msg-in').value = '';
+  document.getElementById('chat-setup').innerHTML=`<div class="setup-note"><strong>Chat is local-only.</strong> To enable live chat, paste your Firebase Realtime Database config into the <code>FB</code> object at the top of the script. (console.firebase.google.com → New project → Realtime Database → Project settings → Web app)</div>`;
+  const doSend=()=>{
+    const n=document.getElementById('name-in').value.trim()||'Anonymous';
+    const t=document.getElementById('msg-in').value.trim();
+    if(!t)return; localStorage.setItem('ddr-name',n);
+    appendMsg({name:n,text:t,ts:Date.now()}); document.getElementById('msg-in').value='';
   };
-
-  document.getElementById('send-btn').addEventListener('click', doSend);
-  document.getElementById('msg-in').addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
-
+  document.getElementById('send-btn').addEventListener('click',doSend);
+  document.getElementById('msg-in').addEventListener('keydown',e=>{if(e.key==='Enter')doSend();});
 } else {
-  (async () => {
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getDatabase, ref, push, query, limitToLast, onChildAdded }
-      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
-
-    const db  = getDatabase(initializeApp(FB));
-    const ref_ = ref(db, 'draft-race-2026/chat');
-
-    onChildAdded(query(ref_, limitToLast(50)), snap => appendMsg(snap.val()));
-
-    const doSend = () => {
-      const n = document.getElementById('name-in').value.trim() || 'Anonymous';
-      const t = document.getElementById('msg-in').value.trim();
-      if (!t) return;
-      localStorage.setItem('ddr-name', n);
-      push(ref_, { name: n, text: t, ts: Date.now() });
-      document.getElementById('msg-in').value = '';
+  (async()=>{
+    const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const {getDatabase,ref,push,query,limitToLast,onChildAdded}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+    const db=getDatabase(initializeApp(FB)); const r=ref(db,'draft-race-2026/chat');
+    onChildAdded(query(r,limitToLast(50)),snap=>appendMsg(snap.val()));
+    const doSend=()=>{
+      const n=document.getElementById('name-in').value.trim()||'Anonymous';
+      const t=document.getElementById('msg-in').value.trim();
+      if(!t)return; localStorage.setItem('ddr-name',n);
+      push(r,{name:n,text:t,ts:Date.now()}); document.getElementById('msg-in').value='';
     };
-
-    document.getElementById('send-btn').addEventListener('click', doSend);
-    document.getElementById('msg-in').addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
+    document.getElementById('send-btn').addEventListener('click',doSend);
+    document.getElementById('msg-in').addEventListener('keydown',e=>{if(e.key==='Enter')doSend();});
   })();
 }
 </script>
