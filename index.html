@@ -224,12 +224,17 @@
     }
 
     /* ── RUNNER ─────────────────────────── */
+    @keyframes bob {
+      0%, 100% { transform: translateY(-50%) rotate(-1.5deg) scaleY(1); }
+      50%       { transform: translateY(-57%) rotate(1.5deg) scaleY(0.95); }
+    }
+
     .runner {
       position: absolute;
       top: 50%;
-      transform: translateY(-50%);
-      transition: left 3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      /* transition set dynamically by JS — starts as ease-out, switches to linear */
       z-index: 10;
+      animation: bob 0.42s ease-in-out infinite;
     }
 
     .runner svg {
@@ -240,18 +245,24 @@
       image-rendering: crisp-edges;
     }
 
+    /* brief brightness flash on a big move */
+    .runner.surge {
+      filter: brightness(2) saturate(1.5);
+      transition: filter 0.15s;
+    }
+
     /* name tag above runner on hover */
     .runner::after {
       content: attr(data-name);
       position: absolute;
-      bottom: calc(100% + 3px);
+      bottom: calc(100% + 4px);
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.88);
+      background: rgba(0,0,0,0.9);
       color: #fff;
       font-size: 9px;
       font-weight: 700;
-      padding: 2px 6px;
+      padding: 3px 7px;
       border-radius: 3px;
       white-space: nowrap;
       pointer-events: none;
@@ -489,11 +500,11 @@ const TEAMS = [
 // ═══════════════════════════════════════════════════════
 const RACE_START = new Date('2026-08-24T16:00:00Z').getTime(); // Aug 24 noon ET
 const DRAFT_END  = new Date('2026-09-03T00:00:00Z').getTime(); // Sept 2 8 PM ET
-const TICK_MS    = 60 * 60 * 1000; // hourly ticks
+const TICK_MS    = 2000; // 2-second ticks — live, constant movement
 
 // ═══════════════════════════════════════════════════════
 //  SEEDED RNG (mulberry32)
-//  Same seed = same sequence = everyone sees same race.
+//  Same seed = same sequence = everyone sees the same race.
 // ═══════════════════════════════════════════════════════
 function rng(seed) {
   let s = seed >>> 0;
@@ -505,16 +516,36 @@ function rng(seed) {
   };
 }
 
+// ── INCREMENTAL POSITION CACHE ───────────────────────
+// Each render only processes NEW ticks since the last call — O(1) per frame.
+const teamRNGs     = TEAMS.map((_, i) => rng(i * 999983 + 0xBEEFCAFE));
+const teamPos      = TEAMS.map(() => 0);
+let   computedTicks = 0;
+const surgingTeams  = new Set(); // teams that just made a big move this tick
+
 function computePositions(atMs) {
-  const ticks = Math.max(0, Math.floor(
+  const targetTick = Math.max(0, Math.floor(
     (Math.min(atMs, DRAFT_END) - RACE_START) / TICK_MS
   ));
-  return TEAMS.map((team, i) => {
-    const rand = rng(i * 999983 + 0xBEEFCAFE);
-    let pos = 0;
-    for (let t = 0; t < ticks; t++) pos += rand();
-    return { ...team, pos };
-  });
+
+  surgingTeams.clear();
+
+  while (computedTicks < targetTick) {
+    TEAMS.forEach((_, i) => {
+      const r = teamRNGs[i]();
+      // 7% chance of a surge: lands 4–12× a normal tick
+      if (r < 0.07) {
+        const boost = teamRNGs[i]() * 8 + 4;
+        teamPos[i] += r + boost;
+        if (computedTicks === targetTick - 1) surgingTeams.add(i);
+      } else {
+        teamPos[i] += r;
+      }
+    });
+    computedTicks++;
+  }
+
+  return TEAMS.map((team, i) => ({ ...team, pos: teamPos[i] }));
 }
 
 function rankTeams(teams) {
@@ -651,9 +682,15 @@ function renderTrack(ranked) {
     const i = TEAMS.findIndex(t => t.name === team.name);
     const el = document.getElementById(`runner-${i}`);
     if (!el) return;
-    // playable range: 13% (just past left endzone) to 83% (just before right endzone)
+    // playable range: 13% → 81% (within the playing field)
     const pct = 13 + ((team.pos - minPos) / spread) * 68;
     el.style.left = `${pct.toFixed(2)}%`;
+
+    // flash the runner if they just surged
+    if (surgingTeams.has(i)) {
+      el.classList.add('surge');
+      setTimeout(() => el.classList.remove('surge'), 400);
+    }
   });
 }
 
@@ -719,14 +756,27 @@ function render() {
 
 // ── INIT ────────────────────────────────────────
 buildField();
-buildLanes(); // sets all runners at left:13%
+buildLanes(); // all runners start at left:13%, no transition yet
 
 updateCountdown();
 setInterval(updateCountdown, 1000);
 
-// brief delay so CSS transition fires on initial load (race-start animation)
-setTimeout(render, 200);
-setInterval(render, 60 * 1000);
+// Phase 1: after a beat, ease runners into current positions
+setTimeout(() => {
+  document.querySelectorAll('.runner').forEach((el, i) => {
+    el.style.transition = `left 1.6s cubic-bezier(0.25,0.46,0.45,0.94)`;
+    el.style.animationDelay = `${i * 0.04}s`; // stagger bobs slightly
+  });
+  render();
+
+  // Phase 2: after the intro animation settles, switch to continuous linear ticks
+  setTimeout(() => {
+    document.querySelectorAll('.runner').forEach(el => {
+      el.style.transition = `left ${TICK_MS}ms linear`;
+    });
+    setInterval(render, TICK_MS);
+  }, 2000);
+}, 150);
 
 // ═══════════════════════════════════════════════════════
 //  CHAT
