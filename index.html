@@ -211,6 +211,29 @@
 
     .runner svg { display:block; width:28px; height:44px; image-rendering:pixelated; image-rendering:crisp-edges; }
 
+    /* my-team pulse ring */
+    @keyframes my-ring {
+      0%,100% { box-shadow: 0 0 0 2px var(--my-color), 0 0 12px 4px var(--my-color); opacity:0.9; }
+      50%      { box-shadow: 0 0 0 4px var(--my-color), 0 0 22px 8px var(--my-color); opacity:1; }
+    }
+    .runner.my-runner { --my-color: #fff; animation: bob 0.44s ease-in-out infinite, my-ring 1.4s ease-in-out infinite; border-radius: 4px; }
+
+    /* runner hover tooltip */
+    .runner-tip {
+      position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,0.88); border:1px solid rgba(255,255,255,0.12);
+      color:#fff; font-size:9px; font-weight:700; white-space:nowrap;
+      padding:4px 7px; border-radius:5px; pointer-events:none;
+      opacity:0; transition:opacity 0.12s; z-index:40;
+    }
+    .runner:hover .runner-tip { opacity:1; }
+
+    /* standings rank-change flash */
+    @keyframes rank-up   { 0%{background:rgba(51,196,122,0.3)} 100%{background:transparent} }
+    @keyframes rank-down { 0%{background:rgba(217,79,79,0.3)}  100%{background:transparent} }
+    .s-row.flash-up   { animation: rank-up   0.7s ease-out forwards; }
+    .s-row.flash-down { animation: rank-down 0.7s ease-out forwards; }
+
     /* speed-trail on surge */
     @keyframes trail-fade {
       0%   { opacity:0.65; transform:scaleX(0); transform-origin:right center; }
@@ -714,6 +737,7 @@ function buildLanes() {
       <div class="runner" id="runner-${i}" data-name="${team.name}"
            style="left:13%; animation-delay:${i*0.043}s; --glow:${team.color}88">
         <div class="rank-badge" id="rank-${i}">—</div>
+        <div class="runner-tip" id="tip-${i}">${team.name}<br>@${team.owner}</div>
         ${runnerSVG(team.color)}
       </div>
     </div>`).join('');
@@ -797,6 +821,20 @@ function raceTick() {
     if (badge) {
       badge.textContent = newRank === 1 ? `👑 1st` : ORDINALS[newRank - 1];
       badge.className   = newRank === 1 ? 'rank-badge leader' : 'rank-badge';
+    }
+    // update tooltip rank
+    const tip = document.getElementById(`tip-${i}`);
+    if (tip) tip.innerHTML = `${ORDINALS[newRank-1]} · ${team.name}<br>@${team.owner}`;
+
+    // flash standings row on rank change
+    if (oldRank && newRank !== oldRank) {
+      const srow = document.querySelector(`#standings .s-row:nth-child(${newRank})`);
+      if (srow) {
+        srow.classList.remove('flash-up','flash-down');
+        void srow.offsetWidth;
+        srow.classList.add(newRank < oldRank ? 'flash-up' : 'flash-down');
+        setTimeout(() => srow.classList.remove('flash-up','flash-down'), 750);
+      }
     }
 
     displayRanks[i] = newRank;
@@ -947,6 +985,20 @@ function saveTeam(team) {
   localStorage.setItem('ddr-team', JSON.stringify(team));
   document.getElementById('modal').style.display = 'none';
   renderChatWho();
+  applyMyRunnerHighlight();
+}
+
+function applyMyRunnerHighlight() {
+  TEAMS.forEach((t, i) => {
+    const el = document.getElementById(`runner-${i}`);
+    if (!el) return;
+    if (myTeam && t.name === myTeam.name) {
+      el.classList.add('my-runner');
+      el.style.setProperty('--my-color', t.color);
+    } else {
+      el.classList.remove('my-runner');
+    }
+  });
 }
 
 function renderChatWho() {
@@ -987,6 +1039,7 @@ if (storedTeam) {
     myTeam = JSON.parse(storedTeam);
     document.getElementById('modal').style.display = 'none';
     renderChatWho();
+    applyMyRunnerHighlight();
   } catch(_) {}
 }
 
