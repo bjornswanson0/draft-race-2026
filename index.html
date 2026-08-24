@@ -234,6 +234,34 @@
     .s-row.flash-up   { animation: rank-up   0.7s ease-out forwards; }
     .s-row.flash-down { animation: rank-down 0.7s ease-out forwards; }
 
+    /* NEW LEADER takeover banner */
+    @keyframes leader-banner-in {
+      0%   { opacity:0; transform:translate(-50%,-50%) scale(0.6); }
+      15%  { opacity:1; transform:translate(-50%,-50%) scale(1.08); }
+      25%  { transform:translate(-50%,-50%) scale(1); }
+      75%  { opacity:1; transform:translate(-50%,-50%) scale(1); }
+      100% { opacity:0; transform:translate(-50%,-50%) scale(1.1); }
+    }
+    #leader-banner {
+      display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      z-index:9999; text-align:center; pointer-events:none;
+      animation: leader-banner-in 2.8s ease-out forwards;
+    }
+    #leader-banner .lb-eyebrow { font-size:0.75rem; letter-spacing:0.22em; text-transform:uppercase; color:#ffd700; margin-bottom:0.3rem; }
+    #leader-banner .lb-name { font-size:clamp(1.8rem,6vw,3.5rem); font-weight:900; color:#fff; text-shadow:0 0 40px currentColor, 0 2px 0 rgba(0,0,0,0.6); }
+    #leader-banner .lb-pick { font-size:1rem; font-weight:700; color:#ffd700; margin-top:0.2rem; }
+
+    /* confetti piece */
+    @keyframes confetti-fall {
+      0%   { transform: translateY(-20px) rotate(0deg); opacity:1; }
+      100% { transform: translateY(100vh)  rotate(720deg); opacity:0; }
+    }
+    .confetti-piece {
+      position:fixed; top:0; width:8px; height:10px; border-radius:2px;
+      pointer-events:none; z-index:9998;
+      animation: confetti-fall linear forwards;
+    }
+
     /* speed-trail on surge */
     @keyframes trail-fade {
       0%   { opacity:0.65; transform:scaleX(0); transform-origin:right center; }
@@ -497,6 +525,13 @@
 </head>
 <body>
 
+<!-- ═══ NEW LEADER BANNER ════════════════════════════ -->
+<div id="leader-banner">
+  <div class="lb-eyebrow">NEW LEADER</div>
+  <div class="lb-name" id="lb-name"></div>
+  <div class="lb-pick">Currently holds the 1st overall pick</div>
+</div>
+
 <!-- ═══ TEAM PICKER MODAL ═══════════════════════════ -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
@@ -759,6 +794,75 @@ const targetPcts  = TEAMS.map(() => 13);
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 
+// ═══════════════════════════════════════════════════════
+//  SOUND ENGINE  (Web Audio API — no files needed)
+// ═══════════════════════════════════════════════════════
+let _ac = null;
+function getAC() { if (!_ac) _ac = new (window.AudioContext||window.webkitAudioContext)(); return _ac; }
+document.addEventListener('click', () => { try { getAC().resume(); } catch(_) {} }, { once:true });
+
+function playTone(freq, type, dur, vol=0.18) {
+  try {
+    const ac = getAC(); if (ac.state === 'suspended') return;
+    const osc = ac.createOscillator(), g = ac.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    g.gain.setValueAtTime(vol, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+    osc.connect(g); g.connect(ac.destination);
+    osc.start(); osc.stop(ac.currentTime + dur);
+  } catch(_) {}
+}
+
+function soundRankUp()    { playTone(520, 'sine', 0.12, 0.12); setTimeout(() => playTone(660, 'sine', 0.12, 0.12), 90); }
+function soundRankDown()  { playTone(320, 'sine', 0.15, 0.10); }
+function soundSurge()     { [200,280,380,500].forEach((f,i) => setTimeout(() => playTone(f,'sawtooth',0.09,0.14), i*40)); }
+function soundNewLeader() {
+  [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f,'sine',0.22,0.22), i*110));
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONFETTI
+// ═══════════════════════════════════════════════════════
+const CONFETTI_COLORS = ['#ffd700','#ff4466','#33c47a','#4a8fd4','#f0b132','#e04080','#29b08a','#fff'];
+
+function launchConfetti(count = 80) {
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+      el.style.width  = (6 + Math.random() * 8) + 'px';
+      el.style.height = (8 + Math.random() * 10) + 'px';
+      el.style.animationDuration = (1.8 + Math.random() * 2) + 's';
+      el.style.animationDelay = '0s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }, i * 18);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  NEW LEADER FLASH
+// ═══════════════════════════════════════════════════════
+let currentLeader = null;
+
+function flashNewLeader(team) {
+  const banner = document.getElementById('leader-banner');
+  const nameEl = document.getElementById('lb-name');
+  if (!banner || !nameEl) return;
+  nameEl.textContent = team.name;
+  nameEl.style.color = team.color;
+  nameEl.style.textShadow = `0 0 40px ${team.color}`;
+  banner.style.display = 'block';
+  banner.style.animation = 'none';
+  void banner.offsetWidth;
+  banner.style.animation = 'leader-banner-in 2.8s ease-out forwards';
+  setTimeout(() => { banner.style.display = 'none'; }, 2900);
+  launchConfetti(90);
+  soundNewLeader();
+}
+
 function visualFrame() {
   TEAMS.forEach((_, i) => {
     // drift toward target + small noise so runners wiggle even when rank is stable
@@ -833,6 +937,11 @@ function raceTick() {
 
     displayRanks[i] = newRank;
 
+    // sounds on rank change
+    if (oldRank && newRank !== oldRank) {
+      if (newRank < oldRank) soundRankUp(); else soundRankDown();
+    }
+
     // surge effects
     if (surgingTeams.has(i)) {
       const el = document.getElementById(`runner-${i}`);
@@ -847,6 +956,7 @@ function raceTick() {
         el.appendChild(pop);
         setTimeout(() => pop.remove(), 1200);
       }
+      soundSurge();
       if (oldRank && newRank < oldRank) {
         logEvent(`🔥 <strong style="color:${team.color}">${team.name}</strong> makes a huge gain — moves up to <strong>${ORDINALS[newRank-1]}</strong>`);
       } else {
@@ -860,6 +970,12 @@ function raceTick() {
       } else {
         logEvent(`📉 <strong style="color:${team.color}">${team.name}</strong> drops to <strong>${ORDINALS[newRank-1]}</strong>`);
       }
+    }
+
+    // new leader detection
+    if (newRank === 1 && team.name !== currentLeader) {
+      if (currentLeader !== null) flashNewLeader(team);
+      currentLeader = team.name;
     }
 
     prevRanks[i] = newRank;
