@@ -222,6 +222,44 @@
       .runner svg { width:18px; height:28px; }
     }
 
+    /* ── LEADER CROWN ──────────────────────── */
+    @keyframes crown-float {
+      0%,100% { transform: translateX(-50%) translateY(0) scale(1); }
+      50%      { transform: translateX(-50%) translateY(-4px) scale(1.12); }
+    }
+
+    .rank-badge.leader {
+      background: rgba(255,215,0,0.2);
+      border: 1px solid rgba(255,215,0,0.55);
+      color: #ffd700;
+      font-size: 9px;
+      animation: crown-float 1.8s ease-in-out infinite;
+    }
+
+    /* ── RUNNER GLOW ────────────────────────── */
+    .runner svg {
+      filter: drop-shadow(0 0 5px var(--glow, rgba(255,255,255,0.3)));
+    }
+
+    /* ── PARTICLES ──────────────────────────── */
+    @keyframes p-burst {
+      0%   { opacity: 1; transform: translate(0,0) scale(1.2); }
+      100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(0); }
+    }
+    .particle {
+      position: absolute; width: 5px; height: 5px; border-radius: 50%;
+      pointer-events: none; z-index: 40;
+      animation: p-burst 0.65s ease-out forwards;
+    }
+
+    /* ── FIELD VIGNETTE ─────────────────────── */
+    .field::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.35) 100%);
+      pointer-events: none; z-index: 4;
+    }
+
     /* ── PLAY BY PLAY ───────────────────────── */
     .pbp-outer { max-width:1200px; margin:0.9rem auto 0; padding:0 1rem; }
 
@@ -279,6 +317,11 @@
     .s-name { font-size:0.83rem; font-weight:600; }
     .s-owner { font-size:0.68rem; color:var(--muted); }
     .s-pick { font-size:0.68rem; font-weight:700; background:rgba(240,177,50,0.1); color:var(--accent); padding:0.15rem 0.5rem; border-radius:20px; flex-shrink:0; }
+    .s-delta { font-size:0.68rem; font-weight:800; min-width:1.2rem; text-align:center; flex-shrink:0; }
+    .s-delta.up   { color:#34c47a; }
+    .s-delta.down { color:#e04080; }
+    .s-delta.same { color:var(--muted); }
+    .s-row.s-leader { background: rgba(255,215,0,0.04); border-left: 2px solid rgba(255,215,0,0.4); }
     .s-bar { width:70px; height:3px; background:var(--border); border-radius:2px; overflow:hidden; flex-shrink:0; }
     .s-fill { height:100%; border-radius:2px; }
     @media (max-width:480px) { .s-bar{display:none} .s-owner{display:none} }
@@ -507,11 +550,23 @@ function buildLanes() {
     <div class="lane" id="lane-${i}">
       <div class="lane-lbl">${team.name}</div>
       <div class="runner" id="runner-${i}" data-name="${team.name}"
-           style="left:13%; animation-delay:${i*0.043}s">
+           style="left:13%; animation-delay:${i*0.043}s; --glow:${team.color}88">
         <div class="rank-badge" id="rank-${i}">—</div>
         ${runnerSVG(team.color)}
       </div>
     </div>`).join('');
+}
+
+function spawnParticles(runnerEl, color) {
+  for (let p = 0; p < 8; p++) {
+    const dot = document.createElement('div');
+    dot.className = 'particle';
+    dot.style.cssText = `background:${color}; top:50%; left:50%;
+      --dx:${(Math.random()-0.5)*60}px; --dy:${(Math.random()-0.5)*40}px;
+      animation-delay:${p*0.04}s`;
+    runnerEl.appendChild(dot);
+    setTimeout(() => dot.remove(), 900);
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -539,8 +594,9 @@ function visualFrame() {
 //  RACE TICK (every 2 seconds)
 //  Updates actual standings and targets for visual lerp.
 // ═══════════════════════════════════════════════════════
-const prevRanks = TEAMS.map(() => 0);
-const ORDINALS  = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+const prevRanks    = TEAMS.map(() => 0);
+const displayRanks = TEAMS.map(() => 0); // last-rendered rank for delta arrows
+const ORDINALS     = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
 const pbpEvents = [];
 
 function logEvent(html) {
@@ -571,9 +627,14 @@ function raceTick() {
     // update target position for visual lerp
     targetPcts[i] = rankToPct(newRank);
 
-    // update rank badge
+    // update rank badge — crown for the leader
     const badge = document.getElementById(`rank-${i}`);
-    if (badge) badge.textContent = ORDINALS[newRank - 1];
+    if (badge) {
+      badge.textContent = newRank === 1 ? `👑 1st` : ORDINALS[newRank - 1];
+      badge.className   = newRank === 1 ? 'rank-badge leader' : 'rank-badge';
+    }
+
+    displayRanks[i] = newRank;
 
     // surge effects
     if (surgingTeams.has(i)) {
@@ -581,6 +642,7 @@ function raceTick() {
       if (el) {
         el.classList.add('surging');
         setTimeout(() => el.classList.remove('surging'), 600);
+        spawnParticles(el, team.color);
         const pop = document.createElement('div');
         pop.className = 'big-play-popup';
         pop.style.color = team.color;
@@ -616,17 +678,25 @@ const RANK_CLS = { 1:'r1', 2:'r2', 3:'r3' };
 
 function renderStandings(ranked) {
   const maxPos = Math.max(...ranked.map(t => t.pos)) || 1;
-  document.getElementById('standings').innerHTML = ranked.map(t => `
-    <div class="s-row">
-      <div class="s-rank ${RANK_CLS[t.rank]||''}">${t.rank}</div>
+  document.getElementById('standings').innerHTML = ranked.map(t => {
+    const i    = TEAMS.findIndex(x => x.name === t.name);
+    const prev = prevRanks[i] || t.rank;
+    const diff = prev - t.rank; // positive = moved up
+    const deltaClass = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
+    const deltaText  = diff > 0 ? `▲${diff}` : diff < 0 ? `▼${Math.abs(diff)}` : '—';
+    return `
+    <div class="s-row${t.rank===1?' s-leader':''}">
+      <div class="s-rank ${RANK_CLS[t.rank]||''}">${t.rank===1?'👑':t.rank}</div>
       <div class="s-dot" style="background:${t.color}"></div>
       <div class="s-info">
         <div class="s-name">${t.name}</div>
         <div class="s-owner">@${t.owner}</div>
       </div>
+      <div class="s-delta ${deltaClass}">${deltaText}</div>
       <div class="s-bar"><div class="s-fill" style="background:${t.color};width:${(t.pos/maxPos*100).toFixed(1)}%"></div></div>
       <div class="s-pick">${ORDINALS[t.rank-1]}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════════════
