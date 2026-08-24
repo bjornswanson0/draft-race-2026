@@ -178,14 +178,7 @@
     .lane { flex:1; position:relative; border-bottom:1px solid rgba(255,255,255,0.055); }
     .lane:last-child { border-bottom:none; }
 
-    /* team label in left end zone */
-    .lane-lbl {
-      position:absolute; left:0; width:12%; top:50%; transform:translateY(-50%);
-      font-size:clamp(6px,0.85vw,9.5px); font-weight:700;
-      color:rgba(255,255,255,0.88); text-align:center; padding:0 3px;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      pointer-events:none; z-index:6;
-    }
+    .lane-lbl { display:none; }
 
     /* rank badge on runner */
     .rank-badge {
