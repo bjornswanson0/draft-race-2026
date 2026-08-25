@@ -709,7 +709,7 @@
   </div>
   <h1>DRAFT DAY <em>RACE</em></h1>
   <p class="header-sub" id="header-sub-dyn">First to the end zone picks first. Race locks September 2 at 7 PM ET — one hour before the draft.</p>
-  <button class="pick-team-btn" id="pick-team-btn" onclick="document.getElementById('modal').style.display='flex'; if(_lastRankedForGrid) refreshTeamGridRanks(_lastRankedForGrid);">Pick your team</button>
+  <button class="pick-team-btn" id="pick-team-btn" onclick="openTeamPicker()">Pick your team</button>
   <div class="countdown" id="countdown"></div>
   <div class="race-progress-wrap">
     <div class="rp-label">
@@ -1393,6 +1393,11 @@ setInterval(updateCountdown, 1000);
 setInterval(updateProgressBar, 60000);
 
 // Initial race tick to set starting ranks + targets
+// ═══════════════════════════════════════════════════════
+//  TEAM IDENTITY (must be declared before first raceTick)
+// ═══════════════════════════════════════════════════════
+let myTeam = null; // { name, owner, color }
+
 raceTick();
 // Race ticks every 2 seconds
 setInterval(raceTick, TICK_MS);
@@ -1402,11 +1407,6 @@ requestAnimationFrame(visualFrame);
 
 // log a welcome event
 setTimeout(() => logEvent('🏈 Race is live — check back often, the order changes fast!'), 800);
-
-// ═══════════════════════════════════════════════════════
-//  TEAM IDENTITY (modal on first visit)
-// ═══════════════════════════════════════════════════════
-let myTeam = null; // { name, owner, color }
 
 function saveTeam(team) {
   myTeam = team;
@@ -1452,9 +1452,7 @@ function renderChatWho() {
       <span class="chat-who-name" style="color:${myTeam.color}">${myTeam.name}</span>
       <span class="chat-who-switch" id="switch-team">switch team</span>
     </div>`;
-  document.getElementById('switch-team').addEventListener('click', () => {
-    document.getElementById('modal').style.display = 'flex';
-  });
+  document.getElementById('switch-team').addEventListener('click', openTeamPicker);
 }
 
 function buildTeamGrid() {
@@ -1474,6 +1472,10 @@ function buildTeamGrid() {
 }
 
 let _lastRankedForGrid = null;
+function openTeamPicker() {
+  document.getElementById('modal').style.display = 'flex';
+  if (_lastRankedForGrid) refreshTeamGridRanks(_lastRankedForGrid);
+}
 function refreshTeamGridRanks(ranked) {
   _lastRankedForGrid = ranked;
   ranked.forEach(t => {
