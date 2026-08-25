@@ -123,6 +123,20 @@
       transition: width 1s linear;
       box-shadow: 0 0 8px rgba(240,177,50,0.5);
     }
+    @keyframes final-stretch-pulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(220,50,50,0.4); }
+      50%       { box-shadow: 0 0 18px rgba(220,50,50,0.9); }
+    }
+    .rp-fill.final-stretch {
+      background: linear-gradient(90deg, #8b1a1a, #e04040);
+      animation: final-stretch-pulse 0.9s ease-in-out infinite;
+    }
+    .rp-final-label {
+      text-align: center; font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: #e04040; margin-top: 0.3rem;
+      animation: final-stretch-pulse 0.9s ease-in-out infinite;
+    }
 
     .header-sub { margin-top: 0.45rem; color: var(--muted); font-size: 0.83rem; }
     .day-chip { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.75); border-radius: 20px; padding: 0.15rem 0.6rem; border: 1px solid rgba(255,255,255,0.2); }
@@ -385,6 +399,22 @@
       transition:background 0.15s; letter-spacing:0.04em;
     }
     .yp-share:hover { background:rgba(255,255,255,0.28); }
+
+    /* runner inspect popup */
+    .inspect-card {
+      position: fixed; z-index: 900;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.9rem 1.1rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      min-width: 180px; max-width: 240px;
+      pointer-events: none;
+      animation: toast-in 0.18s ease;
+    }
+    .ic-name { font-weight: 800; font-size: 0.9rem; margin-bottom: 0.15rem; }
+    .ic-owner { font-size: 0.68rem; color: var(--muted); }
+    .ic-rank { font-size: 1.5rem; font-weight: 900; color: var(--accent); margin: 0.4rem 0 0.2rem; }
+    .ic-pick { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .ic-sparkline { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.4rem; font-size: 0.65rem; color: var(--muted); }
 
     /* standings rank-change flash */
     @keyframes rank-up   { 0%{background:rgba(51,196,122,0.3)} 100%{background:transparent} }
@@ -1035,10 +1065,44 @@ function buildLanes() {
       </div>
     </div>`).join('');
 
-  TEAMS.forEach((_, i) => {
+  TEAMS.forEach((team, i) => {
     const el = document.getElementById(`runner-${i}`);
-    if (el) el.addEventListener('click', () => spawnCheer(el));
+    if (el) el.addEventListener('click', (e) => {
+      spawnCheer(el);
+      showInspectCard(team, i, e);
+      e.stopPropagation();
+    });
   });
+}
+
+let _inspectEl = null;
+function showInspectCard(team, idx, e) {
+  if (_inspectEl) _inspectEl.remove();
+  const ranked = _lastRankedForGrid;
+  if (!ranked) return;
+  const t = ranked.find(r => r.name === team.name);
+  if (!t) return;
+  const hist = rankHistory[idx];
+  const card = document.createElement('div');
+  card.className = 'inspect-card';
+  card.innerHTML = `
+    <div class="ic-name" style="color:${team.color}">${team.name}</div>
+    <div class="ic-owner">@${team.owner}</div>
+    <div class="ic-rank">${ORDINALS[t.rank - 1]}</div>
+    <div class="ic-pick">Draft pick #${t.rank}</div>
+    ${hist.length >= 2 ? `<div class="ic-sparkline">${sparklineSVG(hist, team.color)}<span>Last ${hist.length} ticks</span></div>` : ''}
+  `;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = e.clientX + 14, y = e.clientY - 20;
+  if (x + 250 > vw) x = e.clientX - 250;
+  if (y + 160 > vh) y = vh - 170;
+  card.style.left = x + 'px';
+  card.style.top  = y + 'px';
+  document.body.appendChild(card);
+  _inspectEl = card;
+  const dismiss = () => { card.remove(); _inspectEl = null; document.removeEventListener('click', dismiss); };
+  setTimeout(() => document.addEventListener('click', dismiss), 50);
+  setTimeout(dismiss, 5000);
 }
 
 const CHEER_EMOJIS = ['🎉','🔥','👏','⚡','💪','🏈','🙌','😤','👑','💥'];
@@ -1528,8 +1592,25 @@ function updateProgressBar() {
   const pct     = Math.min(100, (elapsed / total) * 100);
   const fill    = document.getElementById('rp-fill');
   const label   = document.getElementById('rp-pct');
-  if (fill)  fill.style.width  = `${pct.toFixed(1)}%`;
+  const wrap    = document.querySelector('.race-progress-wrap');
+  if (fill) {
+    fill.style.width = `${pct.toFixed(1)}%`;
+    fill.classList.toggle('final-stretch', pct >= 90 && pct < 100);
+  }
   if (label) label.textContent = `${pct.toFixed(1)}% complete`;
+  if (wrap) {
+    let finalLabel = wrap.querySelector('.rp-final-label');
+    if (pct >= 90 && pct < 100) {
+      if (!finalLabel) {
+        finalLabel = document.createElement('div');
+        finalLabel.className = 'rp-final-label';
+        finalLabel.textContent = '⚡ Final Stretch — Positions Locking';
+        wrap.appendChild(finalLabel);
+      }
+    } else if (finalLabel) {
+      finalLabel.remove();
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════
