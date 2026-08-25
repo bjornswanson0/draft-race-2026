@@ -130,7 +130,7 @@
 
     .field {
       position: relative;
-      width: 100%; height: 620px;
+      width: 100%; height: 660px;
       background: #2e8b3e;
       border-radius: 6px;
       overflow: hidden;
@@ -210,21 +210,21 @@
       pointer-events: none;
     }
     .runner-avatar-img {
-      width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+      width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
       border: 2px solid var(--glow, #fff);
-      box-shadow: 0 0 6px var(--glow, rgba(255,255,255,0.4));
+      box-shadow: 0 0 8px var(--glow, rgba(255,255,255,0.4));
       display: block;
     }
     .runner-name-lbl {
-      font-size: 7px; font-weight: 800; color: #fff;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-      white-space: nowrap; max-width: 60px;
+      font-size: 8px; font-weight: 800; color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.95);
+      white-space: nowrap; max-width: 64px;
       overflow: hidden; text-overflow: ellipsis;
       text-align: center; line-height: 1;
     }
     @media (max-width:600px) {
-      .runner-avatar-img { width: 22px; height: 22px; }
-      .runner-name-lbl   { font-size: 5px; }
+      .runner-avatar-img { width: 24px; height: 24px; }
+      .runner-name-lbl   { font-size: 6px; max-width: 40px; }
     }
 
     /* my-team pulse ring */
@@ -243,6 +243,48 @@
       opacity:0; transition:opacity 0.12s; z-index:40;
     }
     .runner:hover .runner-tip { opacity:1; }
+
+    /* ── PODIUM STRIP ───────────────────────── */
+    #podium-strip {
+      max-width: 1200px; margin: 0.9rem auto 0; padding: 0 1rem;
+      display: flex; gap: 0.5rem;
+    }
+    .podium-card {
+      flex: 1; display: flex; align-items: center; gap: 0.75rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.7rem 1rem;
+      position: relative; overflow: hidden; transition: border-color 0.3s;
+    }
+    .podium-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--pc-color, transparent); opacity: 0.06; pointer-events: none;
+    }
+    .podium-card.rank-1 { border-color: rgba(255,215,0,0.4); }
+    .podium-card.rank-1::before { opacity: 0.1; }
+    .podium-pick {
+      font-size: 1.6rem; font-weight: 900; min-width: 2.2rem; text-align: center;
+      line-height: 1;
+    }
+    .podium-pick.p1 { color: #ffd700; }
+    .podium-pick.p2 { color: #c0c0c0; }
+    .podium-pick.p3 { color: #cd7f32; }
+    .podium-av {
+      width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
+      border: 2px solid var(--pc-color, #fff); flex-shrink: 0;
+    }
+    .podium-info { min-width: 0; }
+    .podium-name { font-size: 0.82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .podium-owner { font-size: 0.66rem; color: var(--muted); margin-top: 1px; }
+    .podium-badge {
+      margin-left: auto; flex-shrink: 0;
+      font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 0.25rem 0.55rem;
+      border-radius: 20px; border: 1px solid currentColor;
+    }
+    @media (max-width: 600px) {
+      #podium-strip { flex-direction: column; }
+      .podium-pick { font-size: 1.2rem; }
+    }
 
     /* standings rank-change flash */
     @keyframes rank-up   { 0%{background:rgba(51,196,122,0.3)} 100%{background:transparent} }
@@ -586,6 +628,9 @@
     </div>
   </div>
 </div>
+
+<!-- ═══ PODIUM STRIP ═════════════════════════════════ -->
+<div id="podium-strip"></div>
 
 <!-- ═══ FIELD ════════════════════════════════════════ -->
 <div class="field-outer">
@@ -1008,12 +1053,30 @@ function raceTick() {
   });
 
   renderStandings(ranked);
+  renderPodium(ranked);
 }
 
 // ═══════════════════════════════════════════════════════
 //  STANDINGS
 // ═══════════════════════════════════════════════════════
 const RANK_CLS = { 1:'r1', 2:'r2', 3:'r3' };
+
+function renderPodium(ranked) {
+  const top3 = ranked.slice(0, 3);
+  const pickLabels = ['1st Pick','2nd Pick','3rd Pick'];
+  const pickClass  = ['p1','p2','p3'];
+  const trophies   = ['🥇','🥈','🥉'];
+  document.getElementById('podium-strip').innerHTML = top3.map((t, idx) => `
+    <div class="podium-card rank-${idx+1}" style="--pc-color:${t.color}">
+      <div class="podium-pick ${pickClass[idx]}">${trophies[idx]}</div>
+      <img class="podium-av" src="${t.avatar}" alt="${t.owner}" style="border-color:${t.color}">
+      <div class="podium-info">
+        <div class="podium-name">${t.name}</div>
+        <div class="podium-owner">@${t.owner}</div>
+      </div>
+      <div class="podium-badge" style="color:${t.color}">${pickLabels[idx]}</div>
+    </div>`).join('');
+}
 
 function renderStandings(ranked) {
   const maxPos = Math.max(...ranked.map(t => t.pos)) || 1;
