@@ -353,6 +353,39 @@
       border-color: #ff6b20 !important;
     }
 
+    /* podium gold shimmer */
+    @keyframes gold-shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    .podium-card.rank-1 {
+      background: linear-gradient(105deg,
+        var(--surface) 40%, rgba(255,215,0,0.18) 50%, var(--surface) 60%);
+      background-size: 200% auto;
+      animation: gold-shimmer 2.4s linear infinite;
+    }
+
+    /* race snapshot stats bar */
+    .race-stats {
+      max-width:1200px; margin:0.9rem auto 0; padding:0 1rem;
+      display:flex; gap:0.5rem; flex-wrap:wrap;
+    }
+    .stat-chip {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; padding:0.45rem 0.8rem;
+      font-size:0.75rem; color:var(--text); display:flex; align-items:center; gap:0.4rem;
+    }
+    .stat-chip strong { color:var(--accent); }
+
+    /* share button in sticky bar */
+    .yp-share {
+      background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.25);
+      color:#fff; border-radius:7px; padding:0.3rem 0.7rem;
+      font-size:0.72rem; font-weight:700; cursor:pointer; flex-shrink:0;
+      transition:background 0.15s; letter-spacing:0.04em;
+    }
+    .yp-share:hover { background:rgba(255,255,255,0.28); }
+
     /* standings rank-change flash */
     @keyframes rank-up   { 0%{background:rgba(51,196,122,0.3)} 100%{background:transparent} }
     @keyframes rank-down { 0%{background:rgba(217,79,79,0.3)}  100%{background:transparent} }
@@ -771,6 +804,9 @@
 <!-- ═══ PODIUM STRIP ═════════════════════════════════ -->
 <div id="podium-strip"></div>
 
+<!-- ═══ RACE STATS ═══════════════════════════════════ -->
+<div class="race-stats" id="race-stats"></div>
+
 <!-- ═══ FIELD ════════════════════════════════════════ -->
 <div class="field-outer">
   <div id="final-slot"></div>
@@ -823,6 +859,7 @@
     <div class="yp-rivals" id="yp-rivals"></div>
   </div>
   <div class="yp-trend" id="yp-trend"></div>
+  <button class="yp-share" id="yp-share" title="Share your position">📤</button>
   <button class="yp-close" id="yp-close" title="Hide">✕</button>
 </div>
 
@@ -1295,6 +1332,7 @@ function raceTick() {
   updateYourPickBar(ranked);
   updateHypeCopy(raceProgress);
   refreshTeamGridRanks(ranked);
+  updateRaceStats(ranked);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1339,6 +1377,48 @@ document.getElementById('yp-close').addEventListener('click', () => {
   yourPickBarHidden = true;
   document.getElementById('your-pick-bar').classList.remove('visible');
 });
+
+document.getElementById('yp-share').addEventListener('click', () => {
+  if (!myTeam || myLastRank == null) return;
+  const ord = ORDINALS[myLastRank - 1];
+  const text = `I'm picking ${ord} in the PIKE Fantasy Draft Race! 🏈 Track the race live at bjornswanson0.github.io/draft-race-2026`;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('<span class="toast-em">📤</span>Position copied to clipboard!', 'up');
+  }).catch(() => {
+    showToast('<span class="toast-em">📋</span>Copy: ' + text, 'up');
+  });
+});
+
+function updateRaceStats(ranked) {
+  const el = document.getElementById('race-stats');
+  if (!el || ranked.length === 0) return;
+  const leader = ranked[0];
+  // biggest mover = largest rank improvement over last 5 ticks
+  let bigMover = null, bigMove = 0;
+  TEAMS.forEach((_, i) => {
+    const h = rankHistory[i];
+    if (h.length >= 2) {
+      const delta = h[0] - h[h.length - 1];
+      if (delta > bigMove) { bigMove = delta; bigMover = TEAMS[i]; }
+    }
+  });
+  // hot streak = most consecutive top-3 finishes
+  let hotTeam = null, hotLen = 0;
+  TEAMS.forEach((team, i) => {
+    const h = rankHistory[i];
+    let streak = 0;
+    for (let j = h.length - 1; j >= 0; j--) {
+      if (h[j] <= 3) streak++; else break;
+    }
+    if (streak > hotLen) { hotLen = streak; hotTeam = team; }
+  });
+  const chips = [
+    `<div class="stat-chip">🥇 Leader <strong>${leader.name}</strong></div>`,
+    bigMover ? `<div class="stat-chip">📈 Biggest mover <strong>${bigMover.name}</strong> +${bigMove}</div>` : '',
+    (hotTeam && hotLen >= 3) ? `<div class="stat-chip">🔥 Hot streak <strong>${hotTeam.name}</strong> ${hotLen} ticks</div>` : '',
+  ];
+  el.innerHTML = chips.filter(Boolean).join('');
+}
 
 function updateYourPickBar(ranked) {
   if (!myTeam || yourPickBarHidden) return;
