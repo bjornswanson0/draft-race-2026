@@ -292,6 +292,27 @@
     .s-row.flash-up   { animation: rank-up   0.7s ease-out forwards; }
     .s-row.flash-down { animation: rank-down 0.7s ease-out forwards; }
 
+    /* ── STICKY YOUR-PICK BAR ───────────────── */
+    #your-pick-bar {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 8000;
+      padding: 0.7rem 1.5rem;
+      backdrop-filter: blur(12px);
+      border-top: 2px solid var(--yp-color, #f0b132);
+      background: rgba(7,11,18,0.92);
+      align-items: center; gap: 1rem;
+    }
+    #your-pick-bar.visible { display: flex; }
+    .yp-av {
+      width: 38px; height: 38px; border-radius: 50%; object-fit: cover;
+      border: 2px solid var(--yp-color, #f0b132); flex-shrink: 0;
+    }
+    .yp-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .yp-rank  { font-size: 1.3rem; font-weight: 900; color: #fff; line-height: 1; }
+    .yp-pick  { font-size: 0.78rem; font-weight: 700; color: var(--yp-color, #f0b132); }
+    .yp-trend { font-size: 1.1rem; margin-left: auto; }
+    .yp-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 0 0.25rem; }
+
     /* NEW LEADER takeover banner */
     @keyframes leader-banner-in {
       0%   { opacity:0; transform:translate(-50%,-50%) scale(0.6); }
@@ -492,7 +513,7 @@
     .pbp-event strong { color:#fff; }
 
     /* ── BELOW (standings + chat) ───────────── */
-    .below { max-width:1200px; margin:0.9rem auto 0; padding:0 1rem 2.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .below { max-width:1200px; margin:0.9rem auto 0; padding:0 1rem 5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
     @media (max-width:680px) { .below { grid-template-columns:1fr; } }
 
     .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
@@ -1054,6 +1075,7 @@ function raceTick() {
 
   renderStandings(ranked);
   renderPodium(ranked);
+  updateYourPickBar(ranked);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1076,6 +1098,38 @@ function renderPodium(ranked) {
       </div>
       <div class="podium-badge" style="color:${t.color}">${pickLabels[idx]}</div>
     </div>`).join('');
+}
+
+// track last 5 ranks per team for momentum
+const rankHistory = TEAMS.map(() => []);
+let yourPickBarHidden = false;
+
+document.getElementById('yp-close').addEventListener('click', () => {
+  yourPickBarHidden = true;
+  document.getElementById('your-pick-bar').classList.remove('visible');
+});
+
+function updateYourPickBar(ranked) {
+  if (!myTeam || yourPickBarHidden) return;
+  const t = ranked.find(r => r.name === myTeam.name);
+  if (!t) return;
+  const i = TEAMS.findIndex(x => x.name === myTeam.name);
+  rankHistory[i].push(t.rank);
+  if (rankHistory[i].length > 6) rankHistory[i].shift();
+  const hist = rankHistory[i];
+  const trend = hist.length >= 3
+    ? hist[0] - hist[hist.length - 1]   // positive = improved
+    : 0;
+  const trendIcon = trend > 1 ? '🔥' : trend > 0 ? '📈' : trend < -1 ? '💀' : trend < 0 ? '📉' : '➡️';
+
+  const bar = document.getElementById('your-pick-bar');
+  bar.style.setProperty('--yp-color', myTeam.color);
+  document.getElementById('yp-av').src = myTeam.avatar;
+  document.getElementById('yp-av').style.borderColor = myTeam.color;
+  document.getElementById('yp-rank').textContent = ORDINALS[t.rank - 1];
+  document.getElementById('yp-pick').textContent = `Draft pick #${t.rank} · ${myTeam.name}`;
+  document.getElementById('yp-trend').textContent = trendIcon;
+  bar.classList.add('visible');
 }
 
 function renderStandings(ranked) {
@@ -1299,5 +1353,17 @@ if (!fbReady) {
   })();
 }
 </script>
+
+<!-- ═══ STICKY YOUR-PICK BAR ══════════════════════════ -->
+<div id="your-pick-bar">
+  <img class="yp-av" id="yp-av" src="" alt="">
+  <div>
+    <div class="yp-label">Your current pick</div>
+    <div class="yp-rank" id="yp-rank">—</div>
+    <div class="yp-pick" id="yp-pick"></div>
+  </div>
+  <div class="yp-trend" id="yp-trend"></div>
+  <button class="yp-close" id="yp-close" title="Hide">✕</button>
+</div>
 </body>
 </html>
