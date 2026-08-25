@@ -125,6 +125,7 @@
     }
 
     .header-sub { margin-top: 0.45rem; color: var(--muted); font-size: 0.83rem; }
+    .day-chip { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.75); border-radius: 20px; padding: 0.15rem 0.6rem; border: 1px solid rgba(255,255,255,0.2); }
 
     /* ── COUNTDOWN ──────────────────────────── */
     .countdown {
@@ -137,8 +138,11 @@
       border-radius: 8px;
       padding: 0.6rem 0.95rem; min-width: 64px; text-align: center;
     }
-    .cd-num { font-size: 2rem; font-weight: 800; color: #fff; line-height:1; font-variant-numeric:tabular-nums; }
+    .cd-num { font-size: 2rem; font-weight: 800; color: #fff; line-height:1; font-variant-numeric:tabular-nums; transition: color 0.6s; }
     .cd-lbl { font-size: 0.58rem; color: var(--sand); text-transform: uppercase; letter-spacing: 0.1em; margin-top:0.2rem; }
+    @keyframes cd-urgent { 0%,100% { opacity:1; } 50% { opacity:0.55; } }
+    .countdown.urgent .cd-num   { color: #f0a030; }
+    .countdown.critical .cd-num { color: #e04040; animation: cd-urgent 0.9s ease-in-out infinite; }
 
     /* ── FIELD ──────────────────────────────── */
     .field-outer { max-width: 1200px; margin: 1.75rem auto 0; padding: 0 1rem; }
@@ -300,6 +304,31 @@
       #podium-strip { flex-direction: column; }
       .podium-pick { font-size: 1.2rem; }
     }
+
+    /* ── PERSONAL TOAST NOTIFICATIONS ─────────── */
+    #toast-stack {
+      position: fixed; bottom: 80px; right: 1rem;
+      z-index: 8500; display: flex; flex-direction: column-reverse;
+      gap: 0.5rem; pointer-events: none;
+    }
+    @keyframes toast-in {
+      0%   { opacity:0; transform: translateX(40px); }
+      15%  { opacity:1; transform: translateX(0); }
+      80%  { opacity:1; }
+      100% { opacity:0; }
+    }
+    .toast {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 10px; padding: 0.65rem 1rem;
+      box-shadow: 0 4px 20px rgba(34,60,101,0.15);
+      font-size: 0.82rem; font-weight: 600; color: var(--text);
+      max-width: 260px; line-height: 1.35;
+      animation: toast-in 3.8s ease forwards;
+    }
+    .toast.up   { border-left-color: #33c47a; }
+    .toast.down { border-left-color: #e04080; }
+    .toast-em { font-size: 1.1rem; margin-right: 0.35rem; }
 
     /* streak badges in standings */
     .streak-badge {
@@ -659,6 +688,9 @@
   <div class="lb-pick">Currently holds the 1st overall pick</div>
 </div>
 
+<!-- ═══ PERSONAL TOAST STACK ═══════════════════════ -->
+<div id="toast-stack"></div>
+
 <!-- ═══ TEAM PICKER MODAL ═══════════════════════════ -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
@@ -672,6 +704,7 @@
 <div class="header">
   <div class="header-top">
     <span class="eyebrow">Fantasy Football · 2026 Season</span>
+    <span id="day-chip" class="day-chip"></span>
     <span class="live-dot">LIVE</span>
   </div>
   <h1>DRAFT DAY <em>RACE</em></h1>
@@ -1200,8 +1233,20 @@ function renderPodium(ranked) {
     </div>`).join('');
 }
 
+// ── TOAST NOTIFICATIONS ─────────────────────────────
+function showToast(html, type = '') {
+  const stack = document.getElementById('toast-stack');
+  if (!stack) return;
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = html;
+  stack.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
 // track last 5 ranks per team for momentum
 const rankHistory = TEAMS.map(() => []);
+let myLastRank = null;
 let yourPickBarHidden = false;
 
 document.getElementById('yp-close').addEventListener('click', () => {
@@ -1221,6 +1266,21 @@ function updateYourPickBar(ranked) {
     ? hist[0] - hist[hist.length - 1]   // positive = improved
     : 0;
   const trendIcon = trend > 1 ? '🔥' : trend > 0 ? '📈' : trend < -1 ? '💀' : trend < 0 ? '📉' : '➡️';
+
+  // personal rank-change toast
+  if (myLastRank !== null && t.rank !== myLastRank) {
+    if (t.rank < myLastRank) {
+      const gain = myLastRank - t.rank;
+      showToast(`<span class="toast-em">🎉</span>You moved <strong>up ${gain}</strong> to <strong>${ORDINALS[t.rank-1]}</strong>!`, 'up');
+    } else {
+      const lost = t.rank - myLastRank;
+      showToast(`<span class="toast-em">😬</span>You slipped <strong>down ${lost}</strong> to <strong>${ORDINALS[t.rank-1]}</strong>.`, 'down');
+    }
+  }
+  if (t.rank === 1 && myLastRank !== 1) {
+    showToast(`<span class="toast-em">👑</span>You're in the <strong>lead</strong>! Draft pick #1!`, 'up');
+  }
+  myLastRank = t.rank;
 
   const bar = document.getElementById('your-pick-bar');
   bar.style.setProperty('--yp-color', myTeam.color);
@@ -1297,7 +1357,7 @@ function updateCountdown() {
   const rem = DRAFT_END - Date.now();
   const el  = document.getElementById('countdown');
   if (rem <= 0) {
-    el.innerHTML = '<div style="color:var(--accent);font-weight:800;font-size:1.1rem;letter-spacing:.05em">RACE COMPLETE — DRAFT ORDER LOCKED</div>';
+    el.innerHTML = '<div style="color:#fff;font-weight:800;font-size:1.1rem;letter-spacing:.05em">RACE COMPLETE — DRAFT ORDER LOCKED</div>';
     return;
   }
   const d = Math.floor(rem/86400000);
@@ -1309,6 +1369,17 @@ function updateCountdown() {
     <div class="cd-unit"><div class="cd-num">${String(h).padStart(2,'0')}</div><div class="cd-lbl">Hrs</div></div>
     <div class="cd-unit"><div class="cd-num">${String(m).padStart(2,'0')}</div><div class="cd-lbl">Min</div></div>
     <div class="cd-unit"><div class="cd-num">${String(s).padStart(2,'0')}</div><div class="cd-lbl">Sec</div></div>`;
+  el.classList.toggle('urgent',   rem < 86400000 && rem >= 3600000);
+  el.classList.toggle('critical', rem < 3600000);
+
+  // day chip
+  const dayEl = document.getElementById('day-chip');
+  if (dayEl) {
+    const totalDays = Math.ceil((DRAFT_END - RACE_START) / 86400000);
+    const elapsed   = Math.max(0, Date.now() - RACE_START);
+    const dayNum    = Math.min(totalDays, Math.floor(elapsed / 86400000) + 1);
+    dayEl.textContent = `Day ${dayNum} of ${totalDays}`;
+  }
 }
 
 // ═══════════════════════════════════════════════════════
