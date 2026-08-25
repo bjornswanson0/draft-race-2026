@@ -1396,7 +1396,8 @@ setInterval(updateProgressBar, 60000);
 // ═══════════════════════════════════════════════════════
 //  TEAM IDENTITY (must be declared before first raceTick)
 // ═══════════════════════════════════════════════════════
-let myTeam = null; // { name, owner, color }
+let myTeam = null;           // { name, owner, color }
+let _lastRankedForGrid = null; // must be before raceTick() calls refreshTeamGridRanks
 
 raceTick();
 // Race ticks every 2 seconds
@@ -1471,7 +1472,6 @@ function buildTeamGrid() {
   });
 }
 
-let _lastRankedForGrid = null;
 function openTeamPicker() {
   document.getElementById('modal').style.display = 'flex';
   if (_lastRankedForGrid) refreshTeamGridRanks(_lastRankedForGrid);
