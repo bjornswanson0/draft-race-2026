@@ -416,6 +416,38 @@
     .ic-pick { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
     .ic-sparkline { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.4rem; font-size: 0.65rem; color: var(--muted); }
 
+    /* quick trash talk buttons */
+    .trash-btns {
+      display: flex; flex-wrap: wrap; gap: 0.35rem;
+      padding: 0.6rem 1.25rem 0;
+    }
+    .trash-btn {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 0.25rem 0.65rem;
+      font-size: 0.68rem; color: var(--muted); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .trash-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* climbing runner glow (2+ spot gain in history) */
+    @keyframes climb-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(51,196,122,0); }
+      50%       { box-shadow: 0 0 0 8px rgba(51,196,122,0.45); }
+    }
+    .runner.climbing .runner-card {
+      border: 2px solid #33c47a !important;
+      animation: climb-glow 1.2s ease-in-out infinite;
+    }
+
+    /* rank badge pop on gain */
+    @keyframes badge-pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.45); }
+      100% { transform: scale(1); }
+    }
+    .rank-badge.popping { animation: badge-pop 0.35s ease-out; }
+
     /* standings rank-change flash */
     @keyframes rank-up   { 0%{background:rgba(51,196,122,0.3)} 100%{background:transparent} }
     @keyframes rank-down { 0%{background:rgba(217,79,79,0.3)}  100%{background:transparent} }
@@ -871,6 +903,13 @@
     <div id="chat-who"></div>
     <div id="chat-setup"></div>
     <div class="chat-msgs" id="chat-msgs"></div>
+    <div class="trash-btns" id="trash-btns">
+      <button class="trash-btn" data-msg="See you in the 10th round 👋">See you in the 10th round 👋</button>
+      <button class="trash-btn" data-msg="Bold strategy, let's see how that works out 😬">Bold strategy 😬</button>
+      <button class="trash-btn" data-msg="My draft slot is better than yours and you know it 🏆">My slot is better 🏆</button>
+      <button class="trash-btn" data-msg="Enjoy your top pick while it lasts 👀">Enjoy it while it lasts 👀</button>
+      <button class="trash-btn" data-msg="I'm not worried 😤 (I'm a little worried)">I'm not worried 😤</button>
+    </div>
     <div class="chat-form">
       <input id="msg-in" placeholder="Talk trash..." maxlength="200"/>
       <button id="send-btn" type="button">Send</button>
@@ -1387,11 +1426,23 @@ function raceTick() {
     prevRanks[i] = newRank;
   });
 
-  // danger zone: bottom 3 get red pulse + late-race personal warning
+  // danger zone + climbing glow + badge pop
   ranked.forEach(t => {
-    const idx = TEAMS.findIndex(x => x.name === t.name);
-    const el  = document.getElementById(`runner-${idx}`);
+    const idx   = TEAMS.findIndex(x => x.name === t.name);
+    const el    = document.getElementById(`runner-${idx}`);
+    const badge = document.getElementById(`rank-${idx}`);
     if (el) el.classList.toggle('danger', t.rank >= 8);
+    // climbing: gained 2+ spots vs oldest tracked rank
+    const h = rankHistory[idx];
+    const gained = h.length >= 3 ? h[0] - h[h.length - 1] : 0;
+    if (el) el.classList.toggle('climbing', gained >= 2 && t.rank < 8);
+    // badge pop on rank improvement this tick
+    if (badge && prevRanks[idx] && t.rank < prevRanks[idx]) {
+      badge.classList.remove('popping');
+      void badge.offsetWidth;
+      badge.classList.add('popping');
+      setTimeout(() => badge.classList.remove('popping'), 400);
+    }
   });
   if (myTeam && raceProgress >= 0.8) {
     const myT = ranked.find(r => r.name === myTeam.name);
@@ -1816,6 +1867,13 @@ function doSendMsg(pushFn) {
   if (pushFn) pushFn(msg); else appendMsg(msg);
   document.getElementById('msg-in').value = '';
 }
+
+document.querySelectorAll('.trash-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('msg-in').value = btn.dataset.msg;
+    document.getElementById('msg-in').focus();
+  });
+});
 
 if (!fbReady) {
   document.getElementById('send-btn').addEventListener('click', () => doSendMsg(null));
