@@ -146,6 +146,10 @@
 
     /* ── FIELD ──────────────────────────────── */
     .field-outer { max-width: 1200px; margin: 1.75rem auto 0; padding: 0 1rem; }
+    .pick-zones { display:flex; justify-content:space-between; margin-top:4px; padding:0 2px; }
+    .pz-label { font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); }
+    .pz-first { color:var(--accent2); }
+    .pz-last  { color:#c06060; }
 
     .field {
       position: relative;
@@ -374,6 +378,7 @@
     .yp-rank  { font-size: 1.3rem; font-weight: 900; color: #fff; line-height: 1; }
     .yp-pick  { font-size: 0.78rem; font-weight: 700; color: var(--yp-color, #f0b132); }
     .yp-trend { font-size: 1.1rem; margin-left: auto; }
+    .yp-rivals { font-size: 0.62rem; color: rgba(255,255,255,0.5); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
     .yp-close { background: none; border: none; color: var(--sand); cursor: pointer; font-size: 1.1rem; padding: 0 0.25rem; }
 
     /* NEW LEADER takeover banner */
@@ -775,6 +780,10 @@
     <div class="pf" id="pf"></div>
     <div class="lanes" id="lanes"></div>
   </div>
+  <div class="pick-zones">
+    <span class="pz-label pz-last">10th Pick ←</span>
+    <span class="pz-label pz-first">→ 1st Pick</span>
+  </div>
 </div>
 
 <!-- ═══ PLAY BY PLAY ═════════════════════════════════ -->
@@ -811,6 +820,7 @@
     <div class="yp-label">Your current pick</div>
     <div class="yp-rank" id="yp-rank">—</div>
     <div class="yp-pick" id="yp-pick"></div>
+    <div class="yp-rivals" id="yp-rivals"></div>
   </div>
   <div class="yp-trend" id="yp-trend"></div>
   <button class="yp-close" id="yp-close" title="Hide">✕</button>
@@ -1223,7 +1233,11 @@ function raceTick() {
     } else if (oldRank) {
       streakCounts[i] = 0;
     }
-    // apply on-fire class
+    // track rank history for all teams (used by sparklines)
+    rankHistory[i].push(newRank);
+    if (rankHistory[i].length > 10) rankHistory[i].shift();
+
+    // apply on-fire / danger classes
     const runnerEl = document.getElementById(`runner-${i}`);
     if (runnerEl) {
       if (streakCounts[i] >= 3) runnerEl.classList.add('on-fire');
@@ -1331,8 +1345,6 @@ function updateYourPickBar(ranked) {
   const t = ranked.find(r => r.name === myTeam.name);
   if (!t) return;
   const i = TEAMS.findIndex(x => x.name === myTeam.name);
-  rankHistory[i].push(t.rank);
-  if (rankHistory[i].length > 6) rankHistory[i].shift();
   const hist = rankHistory[i];
   const trend = hist.length >= 3
     ? hist[0] - hist[hist.length - 1]   // positive = improved
@@ -1359,9 +1371,32 @@ function updateYourPickBar(ranked) {
   document.getElementById('yp-av').src = myTeam.avatar;
   document.getElementById('yp-av').style.borderColor = myTeam.color;
   document.getElementById('yp-rank').textContent = ORDINALS[t.rank - 1];
+  // nearest rival callout
+  const ahead  = ranked.find(r => r.rank === t.rank - 1);
+  const behind = ranked.find(r => r.rank === t.rank + 1);
+  let rivalText = '';
+  if (ahead)  rivalText += `⬆️ ${ahead.name}`;
+  if (behind) rivalText += (rivalText ? ' · ' : '') + `⬇️ ${behind.name}`;
+  const rivalEl = document.getElementById('yp-rivals');
+  if (rivalEl) rivalEl.textContent = rivalText;
+
   document.getElementById('yp-pick').textContent = `Draft pick #${t.rank} · ${myTeam.name}`;
   document.getElementById('yp-trend').textContent = trendIcon;
   bar.classList.add('visible');
+}
+
+function sparklineSVG(history, color) {
+  if (history.length < 2) return '';
+  const w = 44, h = 20, pad = 2;
+  const xs = history.map((_, j) => pad + j * ((w - pad*2) / (history.length - 1)));
+  const ys = history.map(r => pad + ((r - 1) / 9) * (h - pad*2)); // rank 1=top, 10=bottom
+  const pts = xs.map((x, j) => `${x.toFixed(1)},${ys[j].toFixed(1)}`).join(' ');
+  const trend = history[0] - history[history.length - 1]; // positive = improved
+  const stroke = trend > 0 ? '#33c47a' : trend < 0 ? '#e04080' : '#aaa';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="flex-shrink:0;opacity:0.8">
+    <polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="2" fill="${stroke}"/>
+  </svg>`;
 }
 
 function renderStandings(ranked) {
@@ -1384,8 +1419,8 @@ function renderStandings(ranked) {
         <div class="s-name">${t.name}${streakBadge}</div>
         <div class="s-owner">@${t.owner}</div>
       </div>
+      ${sparklineSVG(rankHistory[i], t.color)}
       <div class="s-delta ${deltaClass}">${deltaText}</div>
-      <div class="s-bar"><div class="s-fill" style="background:${t.color};width:${(t.pos/maxPos*100).toFixed(1)}%"></div></div>
       <div class="s-pick">${ORDINALS[t.rank-1]}</div>
     </div>`;
   }).join('');
