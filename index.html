@@ -448,6 +448,26 @@
     }
     .rank-badge.popping { animation: badge-pop 0.35s ease-out; }
 
+    /* standings hover spotlight */
+    .s-row { cursor: pointer; }
+
+    /* runner spotlight ring on standings hover */
+    @keyframes spotlight-ring {
+      0%   { outline: 3px solid transparent; outline-offset: 2px; }
+      30%  { outline: 3px solid var(--spot-color, #fff); outline-offset: 4px; }
+      100% { outline: 3px solid transparent; outline-offset: 2px; }
+    }
+    .runner.spotlit { outline: 3px solid var(--spot-color, #fff); outline-offset: 3px; border-radius: 50%; }
+    .runner.spotlit .runner-card { transform: scale(1.12); }
+
+    /* head-to-head gap chip in inspect card */
+    .ic-gap {
+      margin-top: 0.4rem; font-size: 0.72rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 20px; display: inline-block;
+    }
+    .ic-gap.ahead  { background: rgba(51,196,122,0.15); color: #1a8f52; }
+    .ic-gap.behind { background: rgba(224,64,128,0.12); color: #c01560; }
+
     /* standings rank-change flash */
     @keyframes rank-up   { 0%{background:rgba(51,196,122,0.3)} 100%{background:transparent} }
     @keyframes rank-down { 0%{background:rgba(217,79,79,0.3)}  100%{background:transparent} }
@@ -1122,6 +1142,17 @@ function showInspectCard(team, idx, e) {
   const t = ranked.find(r => r.name === team.name);
   if (!t) return;
   const hist = rankHistory[idx];
+  // head-to-head vs your team
+  let gapHtml = '';
+  if (myTeam && myTeam.name !== team.name) {
+    const myT = ranked.find(r => r.name === myTeam.name);
+    if (myT) {
+      const gap = myT.rank - t.rank;
+      if (gap > 0) gapHtml = `<div class="ic-gap ahead">⬆️ ${gap} spot${gap>1?'s':''} ahead of you</div>`;
+      else if (gap < 0) gapHtml = `<div class="ic-gap behind">⬇️ ${Math.abs(gap)} spot${Math.abs(gap)>1?'s':''} behind you</div>`;
+      else gapHtml = `<div class="ic-gap ahead">= Tied with you</div>`;
+    }
+  }
   const card = document.createElement('div');
   card.className = 'inspect-card';
   card.innerHTML = `
@@ -1129,6 +1160,7 @@ function showInspectCard(team, idx, e) {
     <div class="ic-owner">@${team.owner}</div>
     <div class="ic-rank">${ORDINALS[t.rank - 1]}</div>
     <div class="ic-pick">Draft pick #${t.rank}</div>
+    ${gapHtml}
     ${hist.length >= 2 ? `<div class="ic-sparkline">${sparklineSVG(hist, team.color)}<span>Last ${hist.length} ticks</span></div>` : ''}
   `;
   const vw = window.innerWidth, vh = window.innerHeight;
@@ -1739,6 +1771,40 @@ requestAnimationFrame(visualFrame);
 
 // log a welcome event
 setTimeout(() => logEvent('🏈 Race is live — check back often, the order changes fast!'), 800);
+
+// ── standings hover → spotlight runner on field ─────
+let _spotTimer = null;
+document.getElementById('standings').addEventListener('mouseover', e => {
+  const row = e.target.closest('.s-row');
+  if (!row) return;
+  const teamName = row.querySelector('.s-name')?.textContent.replace(/\s*🔥\d+|❄️\d+/g,'').trim();
+  if (!teamName) return;
+  const idx = TEAMS.findIndex(t => t.name === teamName);
+  if (idx < 0) return;
+  document.querySelectorAll('.runner.spotlit').forEach(r => r.classList.remove('spotlit'));
+  const runnerEl = document.getElementById(`runner-${idx}`);
+  if (runnerEl) {
+    runnerEl.style.setProperty('--spot-color', TEAMS[idx].color);
+    runnerEl.classList.add('spotlit');
+    runnerEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  clearTimeout(_spotTimer);
+  _spotTimer = setTimeout(() => document.querySelectorAll('.runner.spotlit').forEach(r => r.classList.remove('spotlit')), 2000);
+});
+document.getElementById('standings').addEventListener('mouseleave', () => {
+  clearTimeout(_spotTimer);
+  document.querySelectorAll('.runner.spotlit').forEach(r => r.classList.remove('spotlit'));
+});
+
+// ── spacebar cheer for your own team ────────────────
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' || e.target.tagName === 'INPUT') return;
+  if (!myTeam) return;
+  e.preventDefault();
+  const idx = TEAMS.findIndex(t => t.name === myTeam.name);
+  const el  = document.getElementById(`runner-${idx}`);
+  if (el) { spawnCheer(el); soundRankUp(); }
+});
 
 function saveTeam(team) {
   myTeam = team;
