@@ -703,10 +703,15 @@ function rankTeams(teams) {
 
 // ═══════════════════════════════════════════════════════
 //  RANK → TRACK POSITION
-//  Rank 1 → 81%, Rank 10 → 15%, evenly spaced
+//  Pack marches left→right with race progress.
+//  Day 1: everyone bunched at start (~13%).
+//  Draft day: leader at 81%, last at 15%.
 // ═══════════════════════════════════════════════════════
-function rankToPct(rank) {
-  return 81 - (rank - 1) * 7.33;
+function rankToPct(rank, raceProgress) {
+  const p         = Math.max(0, Math.min(1, raceProgress));
+  const packFront = 13 + p * 68;   // leader's x position
+  const spread    = p * 66;        // gap between 1st and 10th
+  return packFront - (rank - 1) * (spread / 9);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -916,10 +921,11 @@ function logEvent(html) {
 }
 
 function raceTick() {
-  const now    = Date.now();
-  const isDone = now >= DRAFT_END;
-  const positions = computePositions(isDone ? DRAFT_END : now);
-  const ranked    = rankTeams(positions);
+  const now          = Date.now();
+  const isDone       = now >= DRAFT_END;
+  const raceProgress = Math.min(1, Math.max(0, (now - RACE_START) / (DRAFT_END - RACE_START)));
+  const positions    = computePositions(isDone ? DRAFT_END : now);
+  const ranked       = rankTeams(positions);
 
   if (isDone && !document.querySelector('.final-banner')) {
     document.getElementById('final-slot').innerHTML =
@@ -932,7 +938,7 @@ function raceTick() {
     const newRank = team.rank;
 
     // update target position for visual lerp
-    targetPcts[i] = rankToPct(newRank);
+    targetPcts[i] = rankToPct(newRank, raceProgress);
 
     // update rank badge — crown for the leader
     const badge = document.getElementById(`rank-${i}`);
