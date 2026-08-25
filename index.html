@@ -1225,6 +1225,9 @@ function raceTick() {
   if (isDone && !document.querySelector('.final-banner')) {
     document.getElementById('final-slot').innerHTML =
       '<div class="final-banner">🏆 Race complete — draft order is locked</div>';
+    launchConfetti(160);
+    showToast('<span class="toast-em">🏁</span><strong>Race over!</strong> Draft order is locked!', 'up');
+    soundBigPlay();
   }
 
   ranked.forEach(team => {
@@ -1320,12 +1323,18 @@ function raceTick() {
     prevRanks[i] = newRank;
   });
 
-  // danger zone: bottom 3 get red pulse
+  // danger zone: bottom 3 get red pulse + late-race personal warning
   ranked.forEach(t => {
     const idx = TEAMS.findIndex(x => x.name === t.name);
     const el  = document.getElementById(`runner-${idx}`);
     if (el) el.classList.toggle('danger', t.rank >= 8);
   });
+  if (myTeam && raceProgress >= 0.8) {
+    const myT = ranked.find(r => r.name === myTeam.name);
+    if (myT && myT.rank >= 8 && myLastRank != null && myLastRank < 8) {
+      showToast(`<span class="toast-em">🚨</span><strong>Late race!</strong> You're in the bottom 3 with ${Math.round((1-raceProgress)*100)}% left!`, 'down');
+    }
+  }
 
   renderStandings(ranked);
   renderPodium(ranked);
@@ -1443,6 +1452,9 @@ function updateYourPickBar(ranked) {
   }
   if (t.rank === 1 && myLastRank !== 1) {
     showToast(`<span class="toast-em">👑</span>You're in the <strong>lead</strong>! Draft pick #1!`, 'up');
+  }
+  if (t.rank === 7 && myLastRank !== null && myLastRank < 7) {
+    showToast(`<span class="toast-em">⚠️</span>One more drop puts you in the <strong>danger zone</strong>!`, 'down');
   }
   myLastRank = t.rank;
 
