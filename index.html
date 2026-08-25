@@ -301,6 +301,25 @@
       .podium-pick { font-size: 1.2rem; }
     }
 
+    /* streak badges in standings */
+    .streak-badge {
+      font-size: 0.6rem; font-weight: 800;
+      background: rgba(255,107,32,0.12); color: #e05010;
+      border-radius: 20px; padding: 0px 5px;
+      margin-left: 4px; vertical-align: middle;
+    }
+    .streak-badge.cold { background: rgba(80,160,220,0.12); color: #3a80c0; }
+
+    /* on-fire runner glow */
+    @keyframes fire-glow {
+      0%,100% { filter: drop-shadow(0 0 4px #ff6b20) drop-shadow(0 0 2px #ff3300); }
+      50%      { filter: drop-shadow(0 0 10px #ff6b20) drop-shadow(0 0 5px #ffaa00); }
+    }
+    .runner.on-fire .runner-avatar-img {
+      animation: fire-glow 0.7s ease-in-out infinite;
+      border-color: #ff6b20 !important;
+    }
+
     /* standings rank-change flash */
     @keyframes rank-up   { 0%{background:rgba(51,196,122,0.3)} 100%{background:transparent} }
     @keyframes rank-down { 0%{background:rgba(217,79,79,0.3)}  100%{background:transparent} }
@@ -628,6 +647,7 @@
     .team-btn:hover .team-btn-avatar { border-color: var(--accent2); }
     .team-btn-name { font-size: 0.78rem; font-weight: 700; text-align: center; line-height: 1.2; }
     .team-btn-owner { font-size: 0.62rem; color: var(--muted); display: block; text-align: center; }
+    .team-btn-rank { font-size: 0.62rem; font-weight: 800; color: var(--accent2); display: block; text-align: center; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -655,8 +675,8 @@
     <span class="live-dot">LIVE</span>
   </div>
   <h1>DRAFT DAY <em>RACE</em></h1>
-  <p class="header-sub">First to the end zone picks first. Race locks September 2 at 7 PM ET — one hour before the draft.</p>
-  <button class="pick-team-btn" id="pick-team-btn" onclick="document.getElementById('modal').style.display='flex'">Pick your team</button>
+  <p class="header-sub" id="header-sub-dyn">First to the end zone picks first. Race locks September 2 at 7 PM ET — one hour before the draft.</p>
+  <button class="pick-team-btn" id="pick-team-btn" onclick="document.getElementById('modal').style.display='flex'; if(_lastRankedForGrid) refreshTeamGridRanks(_lastRankedForGrid);">Pick your team</button>
   <div class="countdown" id="countdown"></div>
   <div class="race-progress-wrap">
     <div class="rp-label">
@@ -999,8 +1019,43 @@ function visualFrame() {
 //  Updates actual standings and targets for visual lerp.
 // ═══════════════════════════════════════════════════════
 const prevRanks    = TEAMS.map(() => 0);
-const displayRanks = TEAMS.map(() => 0); // last-rendered rank for delta arrows
+const displayRanks = TEAMS.map(() => 0);
+const streakCounts = TEAMS.map(() => 0); // +N = N consecutive rank-ups, -N = N drops
 const ORDINALS     = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+
+const SURGE_QUIPS = [
+  'BIG PLAY!','SURGE!','HUGE!','LET\'S GO!','WATCH OUT!','SENDING IT!',
+];
+const SURGE_LOG = [
+  'makes a monster move', 'goes absolutely nuclear', 'rockets up the board',
+  'is on a TEAR', 'goes full send and it pays off', 'launches into another gear',
+];
+const MOVE_UP_LOG = [
+  'quietly climbs to', 'sneaks up to', 'picks up ground — now', 'edges up to',
+];
+const MOVE_DOWN_LOG = [
+  'slips back to', 'cedes ground, drops to', 'fades to', 'loses a step — now',
+];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+const HYPE_COPY = [
+  [0.00, 'Just getting started — the pack is tight and anything can happen.'],
+  [0.15, 'The field is starting to spread out. Watch for early movers.'],
+  [0.35, 'Halfway there. The battle for the top picks is heating up.'],
+  [0.55, 'Late in the race. Positions are beginning to lock in.'],
+  [0.75, 'Final stretch — the draft order is nearly set. No room for mistakes.'],
+  [0.90, 'CRUNCH TIME. These last positions will decide who picks first.'],
+  [1.00, 'Race complete — draft order is locked. See you at the draft!'],
+];
+
+function updateHypeCopy(p) {
+  const el = document.getElementById('header-sub-dyn');
+  if (!el) return;
+  for (let i = HYPE_COPY.length - 1; i >= 0; i--) {
+    if (p >= HYPE_COPY[i][0]) { el.textContent = HYPE_COPY[i][1]; break; }
+  }
+}
 const pbpEvents = [];
 
 function logEvent(html) {
@@ -1058,9 +1113,23 @@ function raceTick() {
 
     displayRanks[i] = newRank;
 
-    // sounds on rank change
+    // sounds + streak on rank change
     if (oldRank && newRank !== oldRank) {
-      if (newRank < oldRank) soundRankUp(); else soundRankDown();
+      if (newRank < oldRank) {
+        soundRankUp();
+        streakCounts[i] = Math.max(0, streakCounts[i]) + 1;
+      } else {
+        soundRankDown();
+        streakCounts[i] = Math.min(0, streakCounts[i]) - 1;
+      }
+    } else if (oldRank) {
+      streakCounts[i] = 0;
+    }
+    // apply on-fire class
+    const runnerEl = document.getElementById(`runner-${i}`);
+    if (runnerEl) {
+      if (streakCounts[i] >= 3) runnerEl.classList.add('on-fire');
+      else runnerEl.classList.remove('on-fire');
     }
 
     // surge effects
@@ -1073,13 +1142,13 @@ function raceTick() {
         const pop = document.createElement('div');
         pop.className = 'big-play-popup';
         pop.style.color = team.color;
-        pop.textContent = 'BIG PLAY!';
+        pop.textContent = pick(SURGE_QUIPS);
         el.appendChild(pop);
         setTimeout(() => pop.remove(), 1200);
       }
       soundSurge();
       if (oldRank && newRank < oldRank) {
-        logEvent(`🔥 <strong style="color:${team.color}">${team.name}</strong> makes a huge gain — moves up to <strong>${ORDINALS[newRank-1]}</strong>`);
+        logEvent(`🔥 <strong style="color:${team.color}">${team.name}</strong> ${pick(SURGE_LOG)} — now <strong>${ORDINALS[newRank-1]}</strong>`);
       } else {
         logEvent(`⚡ <strong style="color:${team.color}">${team.name}</strong> surges forward!`);
       }
@@ -1087,9 +1156,9 @@ function raceTick() {
       if (newRank === 1) {
         logEvent(`🏆 <strong style="color:${team.color}">${team.name}</strong> takes the lead!`);
       } else if (newRank < oldRank) {
-        logEvent(`📈 <strong style="color:${team.color}">${team.name}</strong> moves up to <strong>${ORDINALS[newRank-1]}</strong>`);
+        logEvent(`📈 <strong style="color:${team.color}">${team.name}</strong> ${pick(MOVE_UP_LOG)} <strong>${ORDINALS[newRank-1]}</strong>`);
       } else {
-        logEvent(`📉 <strong style="color:${team.color}">${team.name}</strong> drops to <strong>${ORDINALS[newRank-1]}</strong>`);
+        logEvent(`📉 <strong style="color:${team.color}">${team.name}</strong> ${pick(MOVE_DOWN_LOG)} <strong>${ORDINALS[newRank-1]}</strong>`);
       }
     }
 
@@ -1105,6 +1174,8 @@ function raceTick() {
   renderStandings(ranked);
   renderPodium(ranked);
   updateYourPickBar(ranked);
+  updateHypeCopy(raceProgress);
+  refreshTeamGridRanks(ranked);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1166,15 +1237,19 @@ function renderStandings(ranked) {
   document.getElementById('standings').innerHTML = ranked.map(t => {
     const i    = TEAMS.findIndex(x => x.name === t.name);
     const prev = prevRanks[i] || t.rank;
-    const diff = prev - t.rank; // positive = moved up
+    const diff = prev - t.rank;
     const deltaClass = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
     const deltaText  = diff > 0 ? `▲${diff}` : diff < 0 ? `▼${Math.abs(diff)}` : '—';
+    const sc = streakCounts[i];
+    const streakBadge = sc >= 3 ? ` <span class="streak-badge">🔥${sc}</span>`
+                      : sc <= -3 ? ` <span class="streak-badge cold">❄️${Math.abs(sc)}</span>`
+                      : '';
     return `
     <div class="s-row${t.rank===1?' s-leader':''}">
       <div class="s-rank ${RANK_CLS[t.rank]||''}">${t.rank===1?'👑':t.rank}</div>
       <img class="s-avatar" src="${t.avatar}" alt="${t.owner}" style="border-color:${t.color}44">
       <div class="s-info">
-        <div class="s-name">${t.name}</div>
+        <div class="s-name">${t.name}${streakBadge}</div>
         <div class="s-owner">@${t.owner}</div>
       </div>
       <div class="s-delta ${deltaClass}">${deltaText}</div>
@@ -1317,12 +1392,22 @@ function buildTeamGrid() {
       <img class="team-btn-avatar" src="${t.avatar}" alt="${t.owner}" style="border-color:${t.color}">
       <div class="team-btn-name">${t.name}</div>
       <span class="team-btn-owner">@${t.owner}</span>
+      <span class="team-btn-rank" data-rankfor="${t.name}"></span>
     </button>`).join('');
   document.querySelectorAll('.team-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const team = TEAMS.find(t => t.name === btn.dataset.name);
       if (team) saveTeam(team);
     });
+  });
+}
+
+let _lastRankedForGrid = null;
+function refreshTeamGridRanks(ranked) {
+  _lastRankedForGrid = ranked;
+  ranked.forEach(t => {
+    const el = document.querySelector(`[data-rankfor="${CSS.escape(t.name)}"]`);
+    if (el) el.textContent = ORDINALS[t.rank - 1] + ' pick';
   });
 }
 
