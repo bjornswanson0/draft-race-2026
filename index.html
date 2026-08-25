@@ -585,8 +585,21 @@
     .setup-note strong { color:var(--accent); }
 
     /* ── TEAM PICKER MODAL ──────────────────── */
+    .pick-team-btn {
+      margin-top: 1.1rem;
+      background: var(--sand); color: var(--accent);
+      border: none; border-radius: 8px;
+      padding: 0.55rem 1.25rem;
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .pick-team-btn:hover { background: #d4c8b2; }
+    #pick-team-btn.has-team { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+    #pick-team-btn.has-team:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(34,60,101,0.72);
+      position: fixed; inset: 0; background: rgba(18,32,60,0.86);
       display: flex; align-items: center; justify-content: center;
       z-index: 1000; padding: 1rem;
     }
@@ -643,6 +656,7 @@
   </div>
   <h1>DRAFT DAY <em>RACE</em></h1>
   <p class="header-sub">First to the end zone picks first. Race locks September 2 at 7 PM ET — one hour before the draft.</p>
+  <button class="pick-team-btn" id="pick-team-btn" onclick="document.getElementById('modal').style.display='flex'">Pick your team</button>
   <div class="countdown" id="countdown"></div>
   <div class="race-progress-wrap">
     <div class="rp-label">
@@ -1252,8 +1266,21 @@ function saveTeam(team) {
   myTeam = team;
   localStorage.setItem('ddr-team', JSON.stringify(team));
   document.getElementById('modal').style.display = 'none';
+  updatePickBtn();
   renderChatWho();
   applyMyRunnerHighlight();
+}
+
+function updatePickBtn() {
+  const btn = document.getElementById('pick-team-btn');
+  if (!btn) return;
+  if (myTeam) {
+    btn.textContent = `You: ${myTeam.name} · Switch`;
+    btn.classList.add('has-team');
+  } else {
+    btn.textContent = 'Pick your team';
+    btn.classList.remove('has-team');
+  }
 }
 
 function applyMyRunnerHighlight() {
@@ -1306,6 +1333,7 @@ if (storedTeam) {
   try {
     myTeam = JSON.parse(storedTeam);
     document.getElementById('modal').style.display = 'none';
+    updatePickBtn();
     renderChatWho();
     applyMyRunnerHighlight();
   } catch(_) {}
