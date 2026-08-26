@@ -469,6 +469,33 @@
     }
     .rank-badge.popping { animation: badge-pop 0.35s ease-out; }
 
+    /* gap-to-leader chip in sticky bar */
+    .yp-gap {
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em;
+      color: rgba(255,255,255,0.65); white-space: nowrap;
+    }
+
+    /* leader crown bounce */
+    @keyframes crown-bounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      40%       { transform: translateY(-4px) scale(1.15); }
+      65%       { transform: translateY(1px) scale(0.97); }
+    }
+    .rank-badge.leader { animation: crown-bounce 2.2s ease-in-out infinite; }
+
+    /* pass flash label */
+    .pass-flash {
+      position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+      background: #33c47a; color: #fff; font-size: 0.58rem; font-weight: 900;
+      letter-spacing: 0.1em; border-radius: 20px; padding: 0.1rem 0.5rem;
+      pointer-events: none; white-space: nowrap;
+      animation: pass-flash-anim 0.9s ease-out forwards;
+    }
+    @keyframes pass-flash-anim {
+      0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-14px); }
+    }
+
     /* standings hover spotlight */
     .s-row { cursor: pointer; }
 
@@ -971,6 +998,7 @@
     <div class="yp-rank" id="yp-rank">—</div>
     <div class="yp-pick" id="yp-pick"></div>
     <div class="yp-rivals" id="yp-rivals"></div>
+    <div class="yp-gap" id="yp-gap"></div>
   </div>
   <div class="yp-trend" id="yp-trend"></div>
   <span class="yp-best" id="yp-best" style="display:none"></span>
@@ -1261,6 +1289,7 @@ document.getElementById('mute-btn').addEventListener('click', () => {
 });
 if (_muted) document.getElementById('mute-btn').textContent = '🔇';
 
+function soundChat()      { if(muteCheck())return; playTone(600,'sine',0.07,0.08); setTimeout(()=>playTone(750,'sine',0.05,0.07),70); }
 function soundRankUp()    { if(muteCheck())return; playTone(520,'sine',0.12,0.12); setTimeout(()=>playTone(660,'sine',0.12,0.12),90); }
 function soundRankDown()  { if(muteCheck())return; playTone(320,'sine',0.15,0.10); }
 function soundSurge()     { if(muteCheck())return; [200,280,380,500].forEach((f,i)=>setTimeout(()=>playTone(f,'sawtooth',0.09,0.14),i*40)); }
@@ -1417,6 +1446,17 @@ function raceTick() {
         void srow.offsetWidth;
         srow.classList.add(newRank < oldRank ? 'flash-up' : 'flash-down');
         setTimeout(() => srow.classList.remove('flash-up','flash-down'), 750);
+      }
+      // pass flash above runner when gaining a position
+      if (newRank < oldRank) {
+        const runnerEl = document.getElementById(`runner-${i}`);
+        if (runnerEl) {
+          const flash = document.createElement('div');
+          flash.className = 'pass-flash';
+          flash.textContent = `▲ PASS`;
+          runnerEl.appendChild(flash);
+          setTimeout(() => flash.remove(), 950);
+        }
       }
     }
 
@@ -1682,6 +1722,11 @@ function updateYourPickBar(ranked) {
 
   document.getElementById('yp-pick').textContent = `Draft pick #${t.rank} · ${myTeam.name}`;
   document.getElementById('yp-trend').textContent = trendIcon;
+  const gapEl = document.getElementById('yp-gap');
+  if (gapEl) {
+    if (t.rank === 1) gapEl.textContent = '👑 Leading';
+    else gapEl.textContent = `↑${t.rank - 1} from 1st`;
+  }
   bar.classList.add('visible');
 }
 
@@ -1993,6 +2038,7 @@ function doSendMsg(pushFn) {
   const msg = { name: myTeam.name, color: myTeam.color, text: t, ts: Date.now() };
   if (pushFn) pushFn(msg); else appendMsg(msg);
   document.getElementById('msg-in').value = '';
+  soundChat();
 }
 
 document.querySelectorAll('.trash-btn').forEach(btn => {
