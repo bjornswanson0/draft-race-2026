@@ -904,6 +904,59 @@
     .team-btn-name { font-size: 0.78rem; font-weight: 700; text-align: center; line-height: 1.2; }
     .team-btn-owner { font-size: 0.62rem; color: var(--muted); display: block; text-align: center; }
     .team-btn-rank { font-size: 0.62rem; font-weight: 800; color: var(--accent2); display: block; text-align: center; margin-top: 2px; }
+
+    /* ── DAILY RECAP ─────────────────────────── */
+    .recap-outer { max-width:1200px; margin:0.9rem auto 0; padding:0 1rem; }
+    .recap-tabs { display:flex; gap:0.4rem; padding:0.7rem 1.25rem 0; flex-wrap:wrap; }
+    .recap-tab {
+      background:var(--bg); border:1px solid var(--border); border-radius:8px;
+      padding:0.35rem 0.75rem; cursor:pointer; font-size:0.72rem; font-weight:700;
+      color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:1px;
+      font-family:var(--sans); transition:border-color 0.15s, color 0.15s;
+    }
+    .recap-tab span { font-size:0.58rem; font-weight:600; opacity:0.7; }
+    .recap-tab:hover { border-color:var(--accent2); color:var(--accent); }
+    .recap-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .recap-tab.active span { opacity:0.85; }
+    .recap-headline {
+      font-family:var(--serif); font-weight:900; font-size:clamp(1.05rem,2.6vw,1.4rem);
+      line-height:1.25; letter-spacing:-0.01em; color:var(--accent);
+      padding:0.95rem 1.25rem 0.2rem; text-transform:uppercase;
+    }
+    .recap-dateline {
+      padding:0 1.25rem; font-size:0.64rem; color:var(--muted);
+      text-transform:uppercase; letter-spacing:0.1em;
+    }
+    .awards-row { display:flex; gap:0.5rem; flex-wrap:wrap; padding:0.85rem 1.25rem 0.2rem; }
+    .award-chip {
+      background:var(--bg); border:1px solid var(--border); border-radius:8px;
+      padding:0.45rem 0.75rem; min-width:130px;
+    }
+    .award-lbl { font-size:0.56rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+    .award-val { font-size:0.78rem; font-weight:700; margin-top:2px; }
+    .recap-sub {
+      padding:0.9rem 1.25rem 0.25rem; font-size:0.62rem; font-weight:800;
+      letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);
+    }
+    .recap-play { padding:0.3rem 1.25rem; font-size:0.8rem; color:var(--text); line-height:1.45; }
+    .recap-play .rp-time { font-size:0.66rem; color:var(--muted); font-weight:700; margin-right:0.4rem; }
+    .recap-row {
+      display:flex; align-items:flex-start; gap:0.7rem;
+      padding:0.55rem 1.25rem; border-top:1px solid var(--border);
+    }
+    .recap-av {
+      width:32px; height:32px; border-radius:50%; object-fit:cover;
+      border:2px solid transparent; flex-shrink:0; margin-top:2px;
+    }
+    .recap-line1 { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
+    .recap-name { font-size:0.82rem; font-weight:700; }
+    .recap-move { font-size:0.66rem; font-weight:800; color:var(--muted); white-space:nowrap; }
+    .recap-delta { font-size:0.64rem; font-weight:800; border-radius:20px; padding:0.05rem 0.45rem; }
+    .recap-delta.up   { background:rgba(51,196,122,0.14); color:#1a8f52; }
+    .recap-delta.down { background:rgba(224,64,128,0.12); color:#c01560; }
+    .recap-delta.same { background:rgba(0,0,0,0.05); color:var(--muted); }
+    .recap-quip { font-size:0.78rem; color:var(--muted); line-height:1.45; margin-top:2px; }
+    .recap-footer { padding:0.75rem 1.25rem 0.9rem; font-size:0.66rem; color:var(--muted); font-style:italic; }
   </style>
 </head>
 <body>
@@ -992,6 +1045,15 @@
   <div class="pbp">
     <div class="pbp-head">Play by Play</div>
     <div class="pbp-list" id="pbp-list"></div>
+  </div>
+</div>
+
+<!-- ═══ DAILY RECAP ══════════════════════════════════ -->
+<div class="recap-outer">
+  <div class="card">
+    <div class="card-head">📰 Daily Recap · The Rundown</div>
+    <div class="recap-tabs" id="recap-tabs"></div>
+    <div id="recap-body"></div>
   </div>
 </div>
 
@@ -2067,6 +2129,332 @@ if (storedTeam) {
     applyMyRunnerHighlight();
   } catch(_) {}
 }
+
+// ═══════════════════════════════════════════════════════
+//  DAILY RECAP
+//  Replays the same seeded race from tick zero, so every
+//  viewer gets the identical day-by-day story. Quips are
+//  seeded too: the whole league reads the same jokes.
+// ═══════════════════════════════════════════════════════
+const DAY_MS = 86400000;
+const RECAP_SAMPLE_TICKS = 150; // rank snapshot every ~5 min of race time
+
+function seededPick(arr, seed) {
+  return arr[Math.floor(rng(seed)() * arr.length)];
+}
+
+function computeRecapData() {
+  const endMs = Math.min(Date.now(), DRAFT_END);
+  const totalTicks = Math.max(0, Math.floor((endMs - RACE_START) / TICK_MS));
+  const rngs = TEAMS.map((_, i) => rng(i * 999983 + 0xBEEFCAFE));
+  const pos = TEAMS.map(() => 0);
+  const days = [];
+  let day = null;
+
+  const rankNow = () => {
+    const order = pos.map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
+    const ranks = new Array(TEAMS.length);
+    order.forEach((o, r) => { ranks[o.i] = r + 1; });
+    return ranks;
+  };
+
+  const startDay = (idx, tiedStart) => {
+    const ranks = rankNow();
+    day = {
+      idx,
+      startRanks: ranks.slice(),
+      endRanks: null,
+      best: ranks.slice(),
+      worst: ranks.slice(),
+      leadSamples: TEAMS.map(() => 0),
+      cellarSamples: TEAMS.map(() => 0),
+      top: [],           // biggest surges of the day
+      featured: [],      // seeded sample of surges for the highlight reel
+      nSurges: 0,
+      dayRng: rng(0xDA11 + idx * 613),
+      samples: 0,
+      needStart: !!tiedStart, // day 1 starts tied; grab real ranks at first sample
+    };
+    days.push(day);
+  };
+
+  if (totalTicks === 0) return days;
+  startDay(0, true);
+
+  for (let t = 0; t < totalTicks; t++) {
+    const dayIdx = Math.floor((t * TICK_MS) / DAY_MS);
+    if (dayIdx > day.idx) {
+      day.endRanks = rankNow();
+      startDay(dayIdx, false);
+    }
+    for (let i = 0; i < TEAMS.length; i++) {
+      const r = rngs[i]();
+      if (r < 0.07) {
+        const boost = rngs[i]() * 8 + 4;
+        pos[i] += r + boost;
+        const play = { i, boost: r + boost, tick: t };
+        day.top.push(play);
+        if (day.top.length > 6) {
+          day.top.sort((a, b) => b.boost - a.boost);
+          day.top.length = 3;
+        }
+        // reservoir sample: 3 random plays per day, same for every viewer
+        day.nSurges++;
+        if (day.featured.length < 3) day.featured.push(play);
+        else if (day.dayRng() < 3 / day.nSurges) day.featured[Math.floor(day.dayRng() * 3)] = play;
+      } else {
+        pos[i] += r;
+      }
+    }
+    if ((t + 1) % RECAP_SAMPLE_TICKS === 0) {
+      const ranks = rankNow();
+      if (day.needStart) {
+        day.startRanks = ranks.slice();
+        day.best = ranks.slice();
+        day.worst = ranks.slice();
+        day.needStart = false;
+      }
+      day.samples++;
+      for (let i = 0; i < TEAMS.length; i++) {
+        if (ranks[i] < day.best[i])  day.best[i]  = ranks[i];
+        if (ranks[i] > day.worst[i]) day.worst[i] = ranks[i];
+        if (ranks[i] === 1)            day.leadSamples[i]++;
+        if (ranks[i] === TEAMS.length) day.cellarSamples[i]++;
+      }
+    }
+  }
+  day.endRanks = rankNow();
+  days.forEach(d => {
+    d.top.sort((a, b) => b.boost - a.boost);
+    if (d.top.length > 3) d.top.length = 3;
+    d.featured.sort((a, b) => a.tick - b.tick);
+  });
+  return days;
+}
+
+const RECAP_QUIPS = {
+  throne: [
+    t => `${t.name} led wire to wire today. The rest of the league has opened a formal investigation.`,
+    t => `${t.name} spent the whole day in 1st like they pay rent up there. Somebody check on everyone else.`,
+    t => `Total control from ${t.name}, who is already mock drafting. Disgusting behavior, honestly.`,
+    t => `${t.name} owned the top spot all day and felt zero guilt about it.`,
+  ],
+  rocket: [
+    t => `${t.name} jumped ${t.gain} spots in one day. Scientists are baffled. The group chat is furious.`,
+    t => `${t.name} woke up and chose violence, climbing ${t.gain} spots before anyone noticed.`,
+    t => `Up ${t.gain} for ${t.name}, who has not stopped screenshotting the standings since.`,
+    t => `Somebody fed ${t.name} after midnight. Up ${t.gain} spots and showing no remorse.`,
+    t => `${t.name} put the league on notice with a +${t.gain} day. The notice was ignored. It should not have been.`,
+    t => `${t.name} climbed ${t.gain} spots and celebrated like the draft already happened.`,
+  ],
+  climb: [
+    t => `${t.name} quietly moved up ${t.gain}. No fireworks, no drama, just cold-blooded gains.`,
+    t => `${t.name} climbed ${t.gain} and will absolutely claim it was all part of the plan.`,
+    t => `A sneaky +${t.gain} day for ${t.name}. Momentum and no shame, a dangerous combo.`,
+    t => `${t.name} inched up ${t.gain}. Small steps. Big smugness.`,
+  ],
+  cliff: [
+    t => `${t.name} dropped ${t.drop} spots in a single day. Thoughts and prayers. Mostly thoughts.`,
+    t => `${t.name} fell ${t.drop} and has already blamed the app, the wifi, and Mercury retrograde.`,
+    t => `A ${t.drop}-spot faceplant for ${t.name}. Good news: it can't get much worse. Bad news: it can.`,
+    t => `${t.name} plummeted ${t.drop} spots. Their draft board was quietly moved to the recycle bin.`,
+    t => `${t.name} lost ${t.drop} spots and is now "taking a break from checking the app." Sure you are.`,
+    t => `${t.name} went down ${t.drop} today. In their defense, gravity is undefeated.`,
+  ],
+  slip: [
+    t => `${t.name} slipped ${t.drop}. Not a crisis. Not NOT a crisis.`,
+    t => `${t.name} gave back ${t.drop} and would like everyone to know they are fine. They are not fine.`,
+    t => `A soft day for ${t.name}, down ${t.drop}. The kind of loss you don't mention but definitely remember.`,
+    t => `${t.name} drifted down ${t.drop} while insisting the race "doesn't even matter yet."`,
+  ],
+  chaos: [
+    t => `${t.name} touched ${t.bestOrd} and ${t.worstOrd} in the same day. Emotional damage: immeasurable.`,
+    t => `${t.name} ran the full tour today, ${t.bestOrd} to ${t.worstOrd}. Buy the ticket, take the ride.`,
+    t => `${t.name} treated the standings like a yo-yo all day. Cardiologists hate them.`,
+    t => `${t.name} saw ${t.bestOrd} and ${t.worstOrd} before dinner. Someone take their phone away.`,
+  ],
+  basement: [
+    t => `${t.name} spent most of the day in 10th, which technically counts as consistency.`,
+    t => `${t.name} is redecorating the basement at this point. Curtains, throw pillows, the works.`,
+    t => `Another cellar day for ${t.name}. The 10th pick is basically a 1st rounder if you squint hard enough.`,
+    t => `${t.name} has been in last so long the other teams started leaving snacks down there.`,
+  ],
+  flat: [
+    t => `${t.name} finished right where they started, in ${t.endOrd}. A masterclass in doing nothing.`,
+    t => `${t.name} moved exactly zero spots. Boring? Yes. Effective? Also boring.`,
+    t => `${t.name} held serve in ${t.endOrd} all day. No notes. Literally nothing happened.`,
+    t => `A quiet ${t.endOrd}-place day for ${t.name}, which in this race usually means chaos is coming.`,
+  ],
+};
+
+const BIG_PLAY_CALLS = [
+  y => `ripped off a ${y}-yard house call while everyone was checking their phones`,
+  y => `hit a ${y}-yard flea flicker that had absolutely no business working`,
+  y => `took a screen pass ${y} yards while the defense discussed dinner plans`,
+  y => `launched a ${y}-yard bomb into double coverage and simply did not care`,
+  y => `broke off a ${y}-yard punt return that made ten coaches furious at once`,
+  y => `ran a fake punt for ${y} yards from their own end zone. An absolute menace.`,
+];
+
+const RECAP_HEADLINES = [
+  (up, down) => `${up} GOES NUCLEAR, ${down} LAST SEEN CHECKING THE RULES FOR A REDO`,
+  (up, down) => `${up} EATS, ${down} PICKS UP THE CHECK`,
+  (up, down) => `BREAKING: ${up} CANNOT BE STOPPED, ${down} WOULD LIKE TO SPEAK TO A MANAGER`,
+  (up, down) => `${up} SPRINTS AHEAD WHILE ${down} STOPS TO TIE THEIR SHOES`,
+  (up, down) => `${up} MAKES IT LOOK EASY, ${down} MAKES IT LOOK PERSONAL`,
+];
+
+const RECAP_HEADLINES_DAY1 = [
+  leader => `AND THEY'RE OFF: ${leader} DRAWS FIRST BLOOD`,
+  leader => `DAY ONE: TEN TEAMS ENTER, ${leader} IMMEDIATELY GETS COCKY`,
+  leader => `THE RACE BEGINS. ${leader} LEADS EARLY, EVERYONE ELSE IS ALREADY MAKING EXCUSES`,
+];
+
+function playYards(boost) { return Math.min(99, Math.round(boost * 8)); }
+
+function awardChip(lbl, val) {
+  return `<div class="award-chip"><div class="award-lbl">${lbl}</div><div class="award-val">${val}</div></div>`;
+}
+
+function recapRowsFor(d) {
+  return TEAMS.map((team, i) => {
+    const start = d.startRanks[i], end = d.endRanks[i];
+    const delta = start - end; // positive = climbed
+    return {
+      team, i, start, end, delta,
+      gain: delta, drop: Math.abs(delta),
+      range: d.worst[i] - d.best[i],
+      bestOrd: ORDINALS[d.best[i] - 1],
+      worstOrd: ORDINALS[d.worst[i] - 1],
+      endOrd: ORDINALS[end - 1],
+      name: team.name,
+      leadPct: d.samples ? d.leadSamples[i] / d.samples : 0,
+      cellarPct: d.samples ? d.cellarSamples[i] / d.samples : 0,
+    };
+  }).sort((a, b) => a.end - b.end);
+}
+
+function recapArchetype(r) {
+  if (r.end === 1 && r.leadPct >= 0.85) return 'throne';
+  if (r.delta >= 3)  return 'rocket';
+  if (r.delta <= -3) return 'cliff';
+  if (r.range >= 5)  return 'chaos';
+  if (r.delta > 0)   return 'climb';
+  if (r.delta < 0)   return 'slip';
+  if (r.cellarPct >= 0.6) return 'basement';
+  return 'flat';
+}
+
+let recapDays = [];
+let recapSelected = 0;
+
+function renderRecapTabs() {
+  const el = document.getElementById('recap-tabs');
+  if (!el) return;
+  el.innerHTML = recapDays.map((d, idx) => {
+    const date = new Date(RACE_START + d.idx * DAY_MS);
+    const lbl = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    const isToday = idx === recapDays.length - 1 && Date.now() < DRAFT_END;
+    return `<button class="recap-tab${idx === recapSelected ? ' active' : ''}" data-idx="${idx}">${isToday ? 'Today' : `Day ${d.idx + 1}`}<span>${lbl}</span></button>`;
+  }).join('');
+}
+
+function renderRecapDay() {
+  const body = document.getElementById('recap-body');
+  if (!body) return;
+  const d = recapDays[recapSelected];
+  if (!d || !d.endRanks || !d.samples) {
+    body.innerHTML = '<div class="recap-footer">Not enough race yet. Check back once the runners have stretched their legs.</div>';
+    return;
+  }
+  const rows = recapRowsFor(d);
+  const isLive = recapSelected === recapDays.length - 1 && Date.now() < DRAFT_END;
+
+  const up   = rows.reduce((a, b) => (b.delta > a.delta ? b : a));
+  const down = rows.reduce((a, b) => (b.delta < a.delta ? b : a));
+  let headline;
+  if (d.idx === 0) headline = seededPick(RECAP_HEADLINES_DAY1, 5000)(rows[0].name);
+  else if (up.delta === 0 && down.delta === 0) headline = 'NOTHING MOVED TODAY AND FRANKLY THAT IS SUSPICIOUS';
+  else headline = seededPick(RECAP_HEADLINES, 6000 + d.idx * 17)(up.name, down.name);
+
+  const frontRunner = rows.reduce((a, b) => (b.leadPct > a.leadPct ? b : a));
+  const awards = [];
+  if (d.top[0]) {
+    const p = d.top[0];
+    awards.push(awardChip('💥 Play of the day', `${TEAMS[p.i].name} · ${playYards(p.boost)} yds`));
+  }
+  if (up.delta > 0)   awards.push(awardChip('🚀 Rocket of the day', `${up.name} +${up.delta}`));
+  if (down.delta < 0) awards.push(awardChip('🤕 Faceplant of the day', `${down.name} −${down.drop}`));
+  if (frontRunner.leadPct > 0) awards.push(awardChip('👑 Front runner', `${frontRunner.name} · led ${Math.round(frontRunner.leadPct * 100)}% of the day`));
+
+  const reel = d.featured.length ? d.featured : d.top;
+  const playsHtml = reel.map(p => {
+    const team = TEAMS[p.i];
+    const when = new Date(RACE_START + p.tick * TICK_MS).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const call = seededPick(BIG_PLAY_CALLS, 7000 + p.tick)(playYards(p.boost));
+    return `<div class="recap-play"><span class="rp-time">${when}</span><strong style="color:${team.color}">${team.name}</strong> ${call}</div>`;
+  }).join('');
+
+  const usedQuips = {}; // rotate within a day so no two teams share a joke
+  const rowsHtml = rows.map(r => {
+    const arch = recapArchetype(r);
+    const pool = RECAP_QUIPS[arch];
+    const base = Math.floor(rng(9000 + d.idx * 104729 + r.i * 7919)() * pool.length);
+    usedQuips[arch] = usedQuips[arch] || 0;
+    const quip = pool[(base + usedQuips[arch]++) % pool.length](r);
+    const deltaCls = r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : 'same';
+    const deltaTxt = r.delta > 0 ? `▲${r.delta}` : r.delta < 0 ? `▼${r.drop}` : '·';
+    return `
+    <div class="recap-row">
+      <img class="recap-av" src="${r.team.avatar}" alt="${r.team.owner}" style="border-color:${r.team.color}">
+      <div style="min-width:0">
+        <div class="recap-line1">
+          <span class="recap-name">${r.name}</span>
+          <span class="recap-move">${ORDINALS[r.start - 1]} → ${ORDINALS[r.end - 1]}</span>
+          <span class="recap-delta ${deltaCls}">${deltaTxt}</span>
+        </div>
+        <div class="recap-quip">${quip}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const dateStr = new Date(RACE_START + d.idx * DAY_MS).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+
+  body.innerHTML = `
+    <div class="recap-headline">${headline}</div>
+    <div class="recap-dateline">Day ${d.idx + 1}${isLive ? ' · so far, updating live' : ''} · ${dateStr}</div>
+    <div class="awards-row">${awards.join('')}</div>
+    ${playsHtml ? `<div class="recap-sub">💥 Biggest plays of the day</div>${playsHtml}` : ''}
+    <div class="recap-sub">Team by team</div>
+    ${rowsHtml}
+    <div class="recap-footer">Filed by the Draft Day Race recap desk, which is completely unbiased and definitely not one guy in a bathrobe.</div>`;
+}
+
+function refreshRecap(keepSelection) {
+  recapDays = computeRecapData();
+  if (!keepSelection || recapSelected >= recapDays.length) {
+    recapSelected = Math.max(0, recapDays.length - 1);
+  }
+  renderRecapTabs();
+  renderRecapDay();
+}
+
+document.getElementById('recap-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.recap-tab');
+  if (!btn) return;
+  recapSelected = parseInt(btn.dataset.idx, 10);
+  if (recapSelected === recapDays.length - 1) {
+    refreshRecap(true); // live day: recompute fresh on demand
+  } else {
+    renderRecapTabs();
+    renderRecapDay();
+  }
+});
+
+refreshRecap();
+setInterval(() => {
+  if (recapSelected === recapDays.length - 1) refreshRecap(true);
+}, 300000);
 
 // ═══════════════════════════════════════════════════════
 //  CHAT
