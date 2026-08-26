@@ -367,6 +367,27 @@
       border-color: #ff6b20 !important;
     }
 
+    /* podium card flip on team change */
+    .podium-card {
+      perspective: 600px;
+    }
+    .podium-inner {
+      transition: transform 0.45s ease, opacity 0.45s ease;
+      transform-origin: center center;
+    }
+    .podium-card.flipping .podium-inner {
+      transform: rotateY(90deg);
+      opacity: 0;
+    }
+
+    /* best rank chip in sticky bar */
+    .yp-best {
+      font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.7); white-space: nowrap;
+      background: rgba(255,215,0,0.18); border-radius: 20px;
+      padding: 0.15rem 0.5rem; border: 1px solid rgba(255,215,0,0.35);
+    }
+
     /* podium gold shimmer */
     @keyframes gold-shimmer {
       0%   { background-position: -200% center; }
@@ -884,7 +905,11 @@
 </div>
 
 <!-- ═══ PODIUM STRIP ═════════════════════════════════ -->
-<div id="podium-strip"></div>
+<div id="podium-strip">
+  <div class="podium-card rank-1" id="podium-slot-0" style="--pc-color:#888"><div class="podium-inner"></div></div>
+  <div class="podium-card rank-2" id="podium-slot-1" style="--pc-color:#888"><div class="podium-inner"></div></div>
+  <div class="podium-card rank-3" id="podium-slot-2" style="--pc-color:#888"><div class="podium-inner"></div></div>
+</div>
 
 <!-- ═══ RACE STATS ═══════════════════════════════════ -->
 <div class="race-stats" id="race-stats"></div>
@@ -948,6 +973,7 @@
     <div class="yp-rivals" id="yp-rivals"></div>
   </div>
   <div class="yp-trend" id="yp-trend"></div>
+  <span class="yp-best" id="yp-best" style="display:none"></span>
   <button class="yp-share" id="yp-share" title="Share your position">📤</button>
   <button class="yp-close" id="yp-close" title="Hide">✕</button>
 </div>
@@ -1483,6 +1509,17 @@ function raceTick() {
     }
   }
 
+  // race milestones at 25 / 50 / 75 %
+  [0.25, 0.50, 0.75].forEach(pct => {
+    if (!isDone && raceProgress >= pct && !milestonesFired.has(pct)) {
+      milestonesFired.add(pct);
+      const leader = ranked[0];
+      const label  = pct === 0.25 ? 'Quarter way through' : pct === 0.50 ? 'Halfway done' : 'Three-quarters done';
+      showToast(`<span class="toast-em">🏁</span><strong>${label}!</strong> ${leader.name} leads — ${Math.round((1-pct)*100)}% left!`, 'up');
+      launchConfetti(40);
+    }
+  });
+
   renderStandings(ranked);
   renderPodium(ranked);
   updateYourPickBar(ranked);
@@ -1496,21 +1533,36 @@ function raceTick() {
 // ═══════════════════════════════════════════════════════
 const RANK_CLS = { 1:'r1', 2:'r2', 3:'r3' };
 
+const podiumSlotTeams = [null, null, null];
+const pickLabels = ['1st Pick','2nd Pick','3rd Pick'];
+const pickClass  = ['p1','p2','p3'];
+const trophies   = ['🥇','🥈','🥉'];
+
 function renderPodium(ranked) {
   const top3 = ranked.slice(0, 3);
-  const pickLabels = ['1st Pick','2nd Pick','3rd Pick'];
-  const pickClass  = ['p1','p2','p3'];
-  const trophies   = ['🥇','🥈','🥉'];
-  document.getElementById('podium-strip').innerHTML = top3.map((t, idx) => `
-    <div class="podium-card rank-${idx+1}" style="--pc-color:${t.color}">
-      <div class="podium-pick ${pickClass[idx]}">${trophies[idx]}</div>
-      <img class="podium-av" src="${t.avatar}" alt="${t.owner}" style="border-color:${t.color}">
-      <div class="podium-info">
-        <div class="podium-name">${t.name}</div>
-        <div class="podium-owner">@${t.owner}</div>
-      </div>
-      <div class="podium-badge" style="color:${t.color}">${pickLabels[idx]}</div>
-    </div>`).join('');
+  top3.forEach((t, idx) => {
+    const card  = document.getElementById(`podium-slot-${idx}`);
+    const inner = card.querySelector('.podium-inner');
+    if (!inner) return;
+    card.className = `podium-card rank-${idx+1}${idx===0?' rank-1':''}`;
+    card.style.setProperty('--pc-color', t.color);
+    if (podiumSlotTeams[idx] !== t.name) {
+      // new occupant — flip out, update, flip in
+      card.classList.add('flipping');
+      setTimeout(() => {
+        inner.innerHTML = `
+          <div class="podium-pick ${pickClass[idx]}">${trophies[idx]}</div>
+          <img class="podium-av" src="${t.avatar}" alt="${t.owner}" style="border-color:${t.color}">
+          <div class="podium-info">
+            <div class="podium-name">${t.name}</div>
+            <div class="podium-owner">@${t.owner}</div>
+          </div>
+          <div class="podium-badge" style="color:${t.color}">${pickLabels[idx]}</div>`;
+        card.classList.remove('flipping');
+        podiumSlotTeams[idx] = t.name;
+      }, 220);
+    }
+  });
 }
 
 // ── TOAST NOTIFICATIONS ─────────────────────────────
@@ -1527,6 +1579,8 @@ function showToast(html, type = '') {
 // track last 5 ranks per team for momentum
 const rankHistory = TEAMS.map(() => []);
 let myLastRank = null;
+let myBestRank = null;
+const milestonesFired = new Set();
 let yourPickBarHidden = false;
 
 document.getElementById('yp-close').addEventListener('click', () => {
@@ -1604,6 +1658,13 @@ function updateYourPickBar(ranked) {
     showToast(`<span class="toast-em">⚠️</span>One more drop puts you in the <strong>danger zone</strong>!`, 'down');
   }
   myLastRank = t.rank;
+
+  // best rank tracker
+  if (myBestRank === null || t.rank < myBestRank) {
+    myBestRank = t.rank;
+    const bestEl = document.getElementById('yp-best');
+    if (bestEl) { bestEl.textContent = `Best: ${ORDINALS[myBestRank-1]}`; bestEl.style.display = ''; }
+  }
 
   const bar = document.getElementById('your-pick-bar');
   bar.style.setProperty('--yp-color', myTeam.color);
