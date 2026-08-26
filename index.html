@@ -56,7 +56,7 @@
       font-size: 0.68rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: rgba(255,255,255,0.55);
     }
 
     .live-dot {
@@ -105,7 +105,7 @@
       display: flex;
       justify-content: space-between;
       font-size: 0.65rem;
-      color: var(--muted);
+      color: rgba(255,255,255,0.55);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       margin-bottom: 0.4rem;
@@ -138,7 +138,7 @@
       animation: final-stretch-pulse 0.9s ease-in-out infinite;
     }
 
-    .header-sub { margin-top: 0.45rem; color: var(--muted); font-size: 0.83rem; }
+    .header-sub { margin-top: 0.45rem; color: rgba(255,255,255,0.75); font-size: 0.83rem; }
     .day-chip { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.75); border-radius: 20px; padding: 0.15rem 0.6rem; border: 1px solid rgba(255,255,255,0.2); }
 
     /* ── COUNTDOWN ──────────────────────────── */
@@ -372,6 +372,8 @@
       perspective: 600px;
     }
     .podium-inner {
+      display: flex; align-items: center; gap: 0.75rem;
+      width: 100%; min-width: 0;
       transition: transform 0.45s ease, opacity 0.45s ease;
       transform-origin: center center;
     }
@@ -637,9 +639,9 @@
     /* ── MUTE BUTTON ─────────────────────────── */
     #mute-btn {
       background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2);
-      color:#fff; border-radius:6px; padding:0.25rem 0.6rem;
+      color:#fff; border-radius:6px; padding:0.15rem 0.55rem;
       font-size:0.8rem; cursor:pointer; flex-shrink:0;
-      transition:background 0.15s;
+      margin:0 0.6rem; transition:background 0.15s;
     }
     #mute-btn:hover { background:rgba(255,255,255,0.25); }
 
@@ -957,6 +959,23 @@
     .recap-delta.same { background:rgba(0,0,0,0.05); color:var(--muted); }
     .recap-quip { font-size:0.78rem; color:var(--muted); line-height:1.45; margin-top:2px; }
     .recap-footer { padding:0.75rem 1.25rem 0.9rem; font-size:0.66rem; color:var(--muted); font-style:italic; }
+
+    @keyframes recap-in {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:none; }
+    }
+    #recap-body.swap { animation: recap-in 0.25s ease-out; }
+
+    /* ── REDUCED MOTION ─────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .toast { animation: none !important; }
+      .confetti-piece, .cheer-emoji, .pass-flash, .big-play-popup, .particle { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -1013,6 +1032,7 @@
       <span class="ticker-item">Race is live — check back often, the order changes fast!</span>
     </div>
   </div>
+  <button id="mute-btn" type="button" title="Toggle sound">🔊</button>
 </div>
 
 <!-- ═══ PODIUM STRIP ═════════════════════════════════ -->
@@ -1080,7 +1100,6 @@
       <button id="send-btn" type="button">Send</button>
     </div>
   </div>
-  <button id="mute-btn" title="Toggle sound">🔊</button>
 </div>
 
 <!-- ═══ STICKY YOUR-PICK BAR ══════════════════════════ -->
@@ -1516,15 +1535,15 @@ function updateHypeCopy(p) {
     if (p >= HYPE_COPY[i][0]) { el.textContent = HYPE_COPY[i][1]; break; }
   }
 }
-const pbpEvents = [];
-
 function logEvent(html) {
-  pbpEvents.unshift(html);
-  if (pbpEvents.length > 6) pbpEvents.pop();
   const list = document.getElementById('pbp-list');
-  list.innerHTML = pbpEvents
-    .map(e => `<div class="pbp-event">${e}</div>`)
-    .join('');
+  // insert only the new row — rebuilding the list replays every
+  // entrance animation and makes the whole card flicker
+  const el = document.createElement('div');
+  el.className = 'pbp-event';
+  el.innerHTML = html;
+  list.insertBefore(el, list.firstChild);
+  while (list.children.length > 6) list.removeChild(list.lastChild);
   // strip HTML tags for the ticker
   const plain = html.replace(/<[^>]+>/g, '');
   updateTicker(plain);
@@ -1643,6 +1662,7 @@ function raceTick() {
       } else {
         logEvent(`📉 <strong style="color:${team.color}">${team.name}</strong> ${pick(MOVE_DOWN_LOG)} <strong>${ORDINALS[newRank-1]}</strong>`);
       }
+      maybeLogQuip(team.name, newRank < oldRank ? 'up' : 'down');
     }
 
     // new leader detection
@@ -2352,9 +2372,11 @@ function renderRecapTabs() {
   const el = document.getElementById('recap-tabs');
   if (!el) return;
   el.innerHTML = recapDays.map((d, idx) => {
-    const date = new Date(RACE_START + d.idx * DAY_MS);
-    const lbl = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     const isToday = idx === recapDays.length - 1 && Date.now() < DRAFT_END;
+    // race days start at noon ET, so the live day spans two calendar
+    // dates — label it with the actual current date
+    const date = isToday ? new Date() : new Date(RACE_START + d.idx * DAY_MS);
+    const lbl = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     return `<button class="recap-tab${idx === recapSelected ? ' active' : ''}" data-idx="${idx}">${isToday ? 'Today' : `Day ${d.idx + 1}`}<span>${lbl}</span></button>`;
   }).join('');
 }
@@ -2418,7 +2440,7 @@ function renderRecapDay() {
     </div>`;
   }).join('');
 
-  const dateStr = new Date(RACE_START + d.idx * DAY_MS).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+  const dateStr = (isLive ? new Date() : new Date(RACE_START + d.idx * DAY_MS)).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
 
   body.innerHTML = `
     <div class="recap-headline">${headline}</div>
@@ -2449,6 +2471,10 @@ document.getElementById('recap-tabs').addEventListener('click', e => {
     renderRecapTabs();
     renderRecapDay();
   }
+  const body = document.getElementById('recap-body');
+  body.classList.remove('swap');
+  void body.offsetWidth;
+  body.classList.add('swap');
 });
 
 refreshRecap();
