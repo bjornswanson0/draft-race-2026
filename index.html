@@ -557,6 +557,7 @@
       display: none;
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 8000;
       padding: 0.7rem 1.5rem;
+      -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
       border-top: 2px solid var(--yp-color, #f0b132);
       background: rgba(34,60,101,0.95);
@@ -1535,7 +1536,7 @@ function updateHypeCopy(p) {
     if (p >= HYPE_COPY[i][0]) { el.textContent = HYPE_COPY[i][1]; break; }
   }
 }
-function logEvent(html) {
+function logEvent(html, toTicker = true) {
   const list = document.getElementById('pbp-list');
   // insert only the new row — rebuilding the list replays every
   // entrance animation and makes the whole card flicker
@@ -1545,8 +1546,7 @@ function logEvent(html) {
   list.insertBefore(el, list.firstChild);
   while (list.children.length > 6) list.removeChild(list.lastChild);
   // strip HTML tags for the ticker
-  const plain = html.replace(/<[^>]+>/g, '');
-  updateTicker(plain);
+  if (toTicker) updateTicker(html.replace(/<[^>]+>/g, ''));
 }
 
 function raceTick() {
@@ -1652,7 +1652,8 @@ function raceTick() {
       if (oldRank && newRank < oldRank) {
         logEvent(`🔥 <strong style="color:${team.color}">${team.name}</strong> ${pick(SURGE_LOG)} — now <strong>${ORDINALS[newRank-1]}</strong>`);
       } else {
-        logEvent(`⚡ <strong style="color:${team.color}">${team.name}</strong> surges forward!`);
+        // no rank change — worth a line in the log, not a ticker slot
+        logEvent(`⚡ <strong style="color:${team.color}">${team.name}</strong> surges forward!`, false);
       }
     } else if (oldRank && newRank !== oldRank) {
       if (newRank === 1) {
@@ -1960,6 +1961,7 @@ const tickerEvents = ['Race is live — standings shift every 2 seconds!',
   'Check back often — leads change fast.'];
 
 function updateTicker(text) {
+  if (tickerEvents[0] === text) return;
   tickerEvents.unshift(text);
   if (tickerEvents.length > 12) tickerEvents.pop();
   const el = document.getElementById('ticker-inner');
