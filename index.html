@@ -982,7 +982,7 @@
 <body>
 
 <!-- ═══ DRAFT DAY TOMORROW BANNER ══════════════════ -->
-<div id="draft-day-banner">🏈 Race ends Friday, Aug 28 at 8 PM ET. Draft order locks then!</div>
+<div id="draft-day-banner">🏈 Race ends TONIGHT at 8 PM ET. Draft order locks then!</div>
 
 <!-- ═══ NEW LEADER BANNER ════════════════════════════ -->
 <div id="leader-banner">
@@ -1011,7 +1011,7 @@
     <span class="live-dot">LIVE</span>
   </div>
   <h1>DRAFT DAY <em>RACE</em></h1>
-  <p class="header-sub" id="header-sub-dyn">First to the end zone picks first. Race locks Friday, August 28 at 8 PM ET.</p>
+  <p class="header-sub" id="header-sub-dyn">First to the end zone picks first. Race locks tonight at 8 PM ET.</p>
   <button class="pick-team-btn" id="pick-team-btn" onclick="openTeamPicker()">Pick your team</button>
   <div class="countdown" id="countdown"></div>
   <div class="race-progress-wrap">
@@ -1153,7 +1153,7 @@ const TEAMS = [
 //  RACE ENGINE
 // ═══════════════════════════════════════════════════════
 const RACE_START = new Date('2026-08-24T16:00:00Z').getTime();
-const DRAFT_END  = new Date('2026-08-29T00:00:00Z').getTime(); // 8 PM ET Aug 28 = 00:00 UTC Aug 29
+const DRAFT_END  = new Date('2026-08-28T00:00:00Z').getTime(); // 8 PM ET Aug 27 = 00:00 UTC Aug 28
 const TICK_MS    = 2000;
 
 // FINALE CHAOS RAMP — from noon ET on Aug 27, surge odds and surge size
@@ -1165,6 +1165,22 @@ function tickParams(tickIndex) {
   if (t < FINALE_START) return { chance: 0.07, size: 8 };
   const fp = Math.min(1, (t - FINALE_START) / (DRAFT_END - FINALE_START));
   return { chance: 0.07 + 0.18 * fp, size: 8 + 40 * fp };
+}
+
+// PACK CHASE — from 2:20 PM ET on race day, trailing teams get a small
+// catch-up drift and the leader drags, keeping the pack tight so the order
+// trades constantly, like following a live game. Uses no RNG draws, so the
+// random sequence and all prior history stay identical for every viewer.
+const CHASE_START = new Date('2026-08-27T18:20:00Z').getTime();
+const CHASE_K = 0.2;
+function chaseStrength(tickIndex) {
+  return (RACE_START + tickIndex * TICK_MS) >= CHASE_START ? CHASE_K : 0;
+}
+function rankArrayFromPos(posArr) {
+  const order = posArr.map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
+  const ranks = new Array(posArr.length);
+  order.forEach((o, r) => { ranks[o.i] = r + 1; });
+  return ranks;
 }
 
 function rng(seed) {
@@ -1189,6 +1205,8 @@ function computePositions(atMs) {
   surgingTeams.clear();
   while (computedTicks < target) {
     const p = tickParams(computedTicks);
+    const cs = chaseStrength(computedTicks);
+    const chaseRanks = cs ? rankArrayFromPos(teamPos) : null;
     TEAMS.forEach((_, i) => {
       const r = teamRNGs[i]();
       if (r < p.chance) {
@@ -1198,6 +1216,7 @@ function computePositions(atMs) {
       } else {
         teamPos[i] += r;
       }
+      if (cs) teamPos[i] += (chaseRanks[i] - 5.5) * cs;
     });
     computedTicks++;
   }
@@ -2185,12 +2204,7 @@ function computeRecapData() {
   const days = [];
   let day = null;
 
-  const rankNow = () => {
-    const order = pos.map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
-    const ranks = new Array(TEAMS.length);
-    order.forEach((o, r) => { ranks[o.i] = r + 1; });
-    return ranks;
-  };
+  const rankNow = () => rankArrayFromPos(pos);
 
   const startDay = (idx, tiedStart) => {
     const ranks = rankNow();
@@ -2222,6 +2236,8 @@ function computeRecapData() {
       startDay(dayIdx, false);
     }
     const p = tickParams(t);
+    const cs = chaseStrength(t);
+    const chaseRanks = cs ? rankArrayFromPos(pos) : null;
     for (let i = 0; i < TEAMS.length; i++) {
       const r = rngs[i]();
       if (r < p.chance) {
@@ -2240,6 +2256,7 @@ function computeRecapData() {
       } else {
         pos[i] += r;
       }
+      if (cs) pos[i] += (chaseRanks[i] - 5.5) * cs;
     }
     if ((t + 1) % RECAP_SAMPLE_TICKS === 0) {
       const ranks = rankNow();
