@@ -1156,6 +1156,17 @@ const RACE_START = new Date('2026-08-24T16:00:00Z').getTime();
 const DRAFT_END  = new Date('2026-08-29T00:00:00Z').getTime(); // 8 PM ET Aug 28 = 00:00 UTC Aug 29
 const TICK_MS    = 2000;
 
+// FINALE CHAOS RAMP — from noon ET on Aug 27, surge odds and surge size
+// climb toward the finish so the winner is a genuine toss-up. Depends only
+// on the tick index, so history stays identical for every viewer.
+const FINALE_START = new Date('2026-08-27T16:00:00Z').getTime();
+function tickParams(tickIndex) {
+  const t = RACE_START + tickIndex * TICK_MS;
+  if (t < FINALE_START) return { chance: 0.07, size: 8 };
+  const fp = Math.min(1, (t - FINALE_START) / (DRAFT_END - FINALE_START));
+  return { chance: 0.07 + 0.18 * fp, size: 8 + 40 * fp };
+}
+
 function rng(seed) {
   let s = seed >>> 0;
   return () => {
@@ -1177,10 +1188,11 @@ function computePositions(atMs) {
   ));
   surgingTeams.clear();
   while (computedTicks < target) {
+    const p = tickParams(computedTicks);
     TEAMS.forEach((_, i) => {
       const r = teamRNGs[i]();
-      if (r < 0.07) {
-        const boost = teamRNGs[i]() * 8 + 4;
+      if (r < p.chance) {
+        const boost = teamRNGs[i]() * p.size + 4;
         teamPos[i] += r + boost;
         if (computedTicks === target - 1) surgingTeams.add(i);
       } else {
@@ -2209,10 +2221,11 @@ function computeRecapData() {
       day.endRanks = rankNow();
       startDay(dayIdx, false);
     }
+    const p = tickParams(t);
     for (let i = 0; i < TEAMS.length; i++) {
       const r = rngs[i]();
-      if (r < 0.07) {
-        const boost = rngs[i]() * 8 + 4;
+      if (r < p.chance) {
+        const boost = rngs[i]() * p.size + 4;
         pos[i] += r + boost;
         const play = { i, boost: r + boost, tick: t };
         day.top.push(play);
