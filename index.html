@@ -982,7 +982,7 @@
 <body>
 
 <!-- ═══ DRAFT DAY TOMORROW BANNER ══════════════════ -->
-<div id="draft-day-banner">🏈 Draft Day is TOMORROW — Sept 2 at 8 PM ET — positions lock at 7 PM!</div>
+<div id="draft-day-banner">🏈 Race ends Friday, Aug 28 at 8 PM ET. Draft order locks then!</div>
 
 <!-- ═══ NEW LEADER BANNER ════════════════════════════ -->
 <div id="leader-banner">
@@ -1011,7 +1011,7 @@
     <span class="live-dot">LIVE</span>
   </div>
   <h1>DRAFT DAY <em>RACE</em></h1>
-  <p class="header-sub" id="header-sub-dyn">First to the end zone picks first. Race locks September 2 at 7 PM ET — one hour before the draft.</p>
+  <p class="header-sub" id="header-sub-dyn">First to the end zone picks first. Race locks Friday, August 28 at 8 PM ET.</p>
   <button class="pick-team-btn" id="pick-team-btn" onclick="openTeamPicker()">Pick your team</button>
   <div class="countdown" id="countdown"></div>
   <div class="race-progress-wrap">
@@ -1153,7 +1153,7 @@ const TEAMS = [
 //  RACE ENGINE
 // ═══════════════════════════════════════════════════════
 const RACE_START = new Date('2026-08-24T16:00:00Z').getTime();
-const DRAFT_END  = new Date('2026-09-02T23:00:00Z').getTime(); // 7 PM ET = 23:00 UTC
+const DRAFT_END  = new Date('2026-08-29T00:00:00Z').getTime(); // 8 PM ET Aug 28 = 00:00 UTC Aug 29
 const TICK_MS    = 2000;
 
 function rng(seed) {
